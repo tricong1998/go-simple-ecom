@@ -33,9 +33,6 @@ func Initialize(dbConfig *config.DBConfig) (*gorm.DB, error) {
 
 func Migrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		&models.Product{},
 		&models.User{},
-		&models.Order{},
-		// Add other models here as needed
 	)
 }
