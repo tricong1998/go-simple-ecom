@@ -1,0 +1,684 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>server: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/tricong1998/go-ecom/cmd/server/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/tricong1998/go-ecom/internal/api/dto/user.go (100.0%)</option>
+				
+				<option value="file2">github.com/tricong1998/go-ecom/internal/api/handlers/handler_helper.go (0.0%)</option>
+				
+				<option value="file3">github.com/tricong1998/go-ecom/internal/api/handlers/user_handler.go (10.7%)</option>
+				
+				<option value="file4">github.com/tricong1998/go-ecom/internal/api/routes.go (0.0%)</option>
+				
+				<option value="file5">github.com/tricong1998/go-ecom/internal/config/config.go (0.0%)</option>
+				
+				<option value="file6">github.com/tricong1998/go-ecom/internal/database/database.go (0.0%)</option>
+				
+				<option value="file7">github.com/tricong1998/go-ecom/internal/mocks/user_repository_mock.go (20.0%)</option>
+				
+				<option value="file8">github.com/tricong1998/go-ecom/internal/repository/order_repository.go (0.0%)</option>
+				
+				<option value="file9">github.com/tricong1998/go-ecom/internal/repository/user_repository.go (0.0%)</option>
+				
+				<option value="file10">github.com/tricong1998/go-ecom/internal/services/user_service.go (33.3%)</option>
+				
+				<option value="file11">github.com/tricong1998/go-ecom/pkg/logger/logger.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "fmt"
+
+        "github.com/gin-gonic/gin"
+        "github.com/tricong1998/go-ecom/internal/api"
+        "github.com/tricong1998/go-ecom/internal/config"
+        "github.com/tricong1998/go-ecom/internal/database"
+        "github.com/tricong1998/go-ecom/pkg/logger"
+)
+
+func main() <span class="cov0" title="0">{
+        log := logger.NewLogger()
+
+        // Load configuration
+        cfg, err := config.Load()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("Cannot load config")
+        }</span>
+
+        // Initialize db
+        <span class="cov0" title="0">db, err := database.Initialize(&amp;cfg.DB)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("Cannot initialize database")
+        }</span>
+
+        // Migrate db
+        <span class="cov0" title="0">err = database.Migrate(db)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("Cannot migrate database")
+        }</span>
+
+        // Initialize router
+        <span class="cov0" title="0">routes := gin.Default()
+        api.SetupRoutes(routes, db)
+
+        // Start server
+        address := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+        err = routes.Run(address)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("Cannot run server")
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package dto
+
+import (
+        "time"
+
+        "github.com/tricong1998/go-ecom/internal/models"
+)
+
+type CreateUserDto struct {
+        Username string `json:"username" binding:"required"`
+        FullName string `json:"full_name" binding:"required"`
+}
+
+type ReadUserRequest struct {
+        ID uint `uri:"id" binding:"required,min=1"`
+}
+
+type UserResponse struct {
+        ID        uint      `json:"id"`
+        Username  string    `json:"username"`
+        FullName  string    `json:"full_name"`
+        CreatedAt time.Time `json:"created_at"`
+        UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ListUserQuery struct {
+        Username *string `form:"username"`
+        Page     int32   `form:"page" binding:"required,min=1"`
+        PerPage  int32   `form:"per_page" binding:"required,min=5,max=10"`
+}
+
+type ListUserResponse struct {
+        Items    []UserResponse `json:"items"`
+        Metadata MetadataDto    `json:"metadata"`
+}
+
+func ToUserResponse(user *models.User) *UserResponse <span class="cov8" title="1">{
+        return &amp;UserResponse{
+                ID:        user.ID,
+                Username:  user.Username,
+                FullName:  user.FullName,
+                CreatedAt: user.CreatedAt,
+                UpdatedAt: user.UpdatedAt,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handlers
+
+import "github.com/gin-gonic/gin"
+
+func errorResponse(err error) gin.H <span class="cov0" title="0">{
+        return gin.H{"error": err.Error()}
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handlers
+
+import (
+        "fmt"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "github.com/tricong1998/go-ecom/internal/api/dto"
+        "github.com/tricong1998/go-ecom/internal/models"
+        "github.com/tricong1998/go-ecom/internal/services"
+)
+
+type UserHandler struct {
+        UserService services.IUserService
+}
+
+func NewUserHandler(userService services.IUserService) *UserHandler <span class="cov8" title="1">{
+        return &amp;UserHandler{userService}
+}</span>
+
+func (userHandler *UserHandler) CreateUser(ctx *gin.Context) <span class="cov8" title="1">{
+        var input dto.CreateUserDto
+        if err := ctx.ShouldBindJSON(&amp;input); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov8" title="1">user := models.User{
+                Username: input.Username,
+                FullName: input.FullName,
+        }
+        if err := userHandler.UserService.CreateUser(&amp;user); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov8" title="1">ctx.JSON(http.StatusCreated, dto.ToUserResponse(&amp;user))</span>
+}
+
+func (userHandler *UserHandler) ReadUser(ctx *gin.Context) <span class="cov0" title="0">{
+        var readUserRequest dto.ReadUserRequest
+        if err := ctx.ShouldBindUri(&amp;readUserRequest); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">user := userHandler.UserService.ReadUser(uint(readUserRequest.ID))
+        if user == nil </span><span class="cov0" title="0">{
+                err := fmt.Errorf("user not found: %d", readUserRequest.ID)
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">ctx.JSON(http.StatusOK, dto.ToUserResponse(user))</span>
+}
+
+func (userHandler *UserHandler) UpdateUser(ctx *gin.Context) <span class="cov0" title="0">{
+        var input dto.CreateUserDto
+        if err := ctx.ShouldBindJSON(&amp;input); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">var readUserRequest dto.ReadUserRequest
+        if err := ctx.ShouldBindUri(&amp;readUserRequest); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">user := models.User{
+                Username: input.Username,
+                FullName: input.FullName,
+        }
+        fmt.Println(user, readUserRequest)
+        user.ID = readUserRequest.ID
+        if err := userHandler.UserService.UpdateUser(&amp;user); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">ctx.JSON(http.StatusCreated, dto.ToUserResponse(&amp;user))</span>
+}
+
+func (userHandler *UserHandler) ListUsers(ctx *gin.Context) <span class="cov0" title="0">{
+        var req dto.ListUserQuery
+        if err := ctx.ShouldBindQuery((&amp;req)); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">users, total, err := userHandler.UserService.GetUsers(int(req.PerPage), int(req.Page), req.Username)
+        if err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">var usersResponse []dto.UserResponse
+        for _, v := range users </span><span class="cov0" title="0">{
+                usersResponse = append(usersResponse, *dto.ToUserResponse(&amp;v))
+        }</span>
+
+        <span class="cov0" title="0">ctx.JSON(http.StatusOK, dto.ListUserResponse{
+                Items: usersResponse,
+                Metadata: dto.MetadataDto{
+                        Total:   total,
+                        Page:    req.Page,
+                        PerPage: req.PerPage,
+                },
+        })</span>
+}
+
+func (userHandler *UserHandler) DeleteUser(ctx *gin.Context) <span class="cov0" title="0">{
+        var readUserRequest dto.ReadUserRequest
+        if err := ctx.ShouldBindUri(&amp;readUserRequest); err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusBadRequest, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">err := userHandler.UserService.DeleteUser(uint(readUserRequest.ID))
+        if err != nil </span><span class="cov0" title="0">{
+                ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+                return
+        }</span>
+
+        <span class="cov0" title="0">ctx.JSON(http.StatusOK, gin.H{})</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package api
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/tricong1998/go-ecom/internal/api/handlers"
+        "github.com/tricong1998/go-ecom/internal/repository"
+        "github.com/tricong1998/go-ecom/internal/services"
+        "gorm.io/gorm"
+)
+
+func SetupRoutes(routes *gin.Engine, db *gorm.DB) <span class="cov0" title="0">{
+        userRepo := repository.NewUserRepository(db)
+        userService := services.NewUserService(userRepo)
+        userHandler := handlers.NewUserHandler(userService)
+
+        userGroup := routes.Group("users")
+        </span><span class="cov0" title="0">{
+                userGroup.POST("", userHandler.CreateUser)
+                userGroup.GET("/:id", userHandler.ReadUser)
+                userGroup.GET("", userHandler.ListUsers)
+                userGroup.PUT("/:id", userHandler.UpdateUser)
+                userGroup.DELETE("/:id", userHandler.DeleteUser)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package config
+
+import (
+        "os"
+
+        "github.com/joho/godotenv"
+)
+
+type DBConfig struct {
+        DBHost     string
+        DBPort     string
+        DBUser     string
+        DBPassword string
+        DBName     string
+}
+
+type ServerConfig struct {
+        Host string
+        Port string
+}
+
+type Config struct {
+        Server ServerConfig
+        DB     DBConfig
+}
+
+func Load() (*Config, error) <span class="cov0" title="0">{
+        // Load .env file
+        err := godotenv.Load()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">config := &amp;Config{
+                Server: ServerConfig{
+                        Port: os.Getenv("SERVER_PORT"),
+                        Host: os.Getenv("SERVER_HOST"),
+                },
+                DB: DBConfig{
+                        DBHost:     os.Getenv("DB_HOST"),
+                        DBPort:     os.Getenv("DB_PORT"),
+                        DBUser:     os.Getenv("DB_USER"),
+                        DBPassword: os.Getenv("DB_PASSWORD"),
+                        DBName:     os.Getenv("DB_NAME"),
+                },
+        }
+
+        if config.Server.Port != "" </span><span class="cov0" title="0">{
+                config.Server.Port = "3333"
+        }</span>
+
+        <span class="cov0" title="0">if config.Server.Host != "" </span><span class="cov0" title="0">{
+                config.Server.Host = "localhost"
+        }</span>
+
+        // "postgresql://user:password@localhost:5432/simple-go-ecom?sslmode=disable"
+        <span class="cov0" title="0">if config.DB.DBHost != "" </span><span class="cov0" title="0">{
+                config.DB.DBHost = "localhost"
+        }</span>
+
+        <span class="cov0" title="0">if config.DB.DBPort != "" </span><span class="cov0" title="0">{
+                config.DB.DBPort = "5432"
+        }</span>
+
+        <span class="cov0" title="0">if config.DB.DBName != "" </span><span class="cov0" title="0">{
+                config.DB.DBName = "simple-ecom"
+        }</span>
+
+        <span class="cov0" title="0">return config, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package database
+
+import (
+        "fmt"
+
+        "github.com/tricong1998/go-ecom/internal/config"
+        "github.com/tricong1998/go-ecom/internal/models"
+        "gorm.io/driver/postgres"
+        "gorm.io/gorm"
+        "gorm.io/gorm/logger"
+)
+
+func Initialize(dbConfig *config.DBConfig) (*gorm.DB, error) <span class="cov0" title="0">{
+        dsn := fmt.Sprintf(
+                "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
+                dbConfig.DBHost,
+                dbConfig.DBUser,
+                dbConfig.DBPassword,
+                dbConfig.DBName,
+                dbConfig.DBPort,
+        )
+
+        db, err := gorm.Open(postgres.Open(dsn), &amp;gorm.Config{
+                Logger: logger.Default.LogMode(logger.Info),
+        })
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return db, nil</span>
+}
+
+func Migrate(db *gorm.DB) error <span class="cov0" title="0">{
+        return db.AutoMigrate(
+                &amp;models.User{},
+                // &amp;models.Product{},
+                // &amp;models.Order{},
+                // Add other models here as needed
+        )
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package mocks
+
+import (
+        "github.com/stretchr/testify/mock"
+        "github.com/tricong1998/go-ecom/internal/models"
+)
+
+type MockUserRepository struct {
+        mock.Mock
+}
+
+func (m *MockUserRepository) CreateUser(user *models.User) error <span class="cov8" title="1">{
+        args := m.Called(user)
+        return args.Error(0)
+}</span>
+
+func (m *MockUserRepository) ReadUser(id uint) *models.User <span class="cov0" title="0">{
+        args := m.Called(id)
+        return args.Get(0).(*models.User)
+}</span>
+
+func (m *MockUserRepository) GetUsers(
+        perPage, page int,
+        username *string,
+) ([]models.User, int64, error) <span class="cov0" title="0">{
+        args := m.Called(perPage, page, username)
+        return args.Get(0).([]models.User), args.Get(1).(int64), args.Error(2)
+}</span>
+
+func (m *MockUserRepository) UpdateUser(user *models.User) error <span class="cov0" title="0">{
+        args := m.Called(user)
+        return args.Error(0)
+}</span>
+
+func (m *MockUserRepository) DeleteUser(id uint) error <span class="cov0" title="0">{
+        args := m.Called(id)
+        return args.Error(0)
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package repository
+
+import (
+        "github.com/tricong1998/go-ecom/internal/models"
+        "gorm.io/gorm"
+)
+
+type OrderRepository struct {
+        db *gorm.DB
+}
+
+func (orderRepo *OrderRepository) createOrder(input *models.Order) error <span class="cov0" title="0">{
+        return orderRepo.db.Create(input).Error
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package repository
+
+import (
+        "github.com/tricong1998/go-ecom/internal/models"
+        "gorm.io/gorm"
+)
+
+type UserRepository struct {
+        db *gorm.DB
+}
+
+type IUserRepository interface {
+        CreateUser(input *models.User) error
+        ReadUser(id uint) *models.User
+        GetUsers(
+                perPage, page int,
+                username *string,
+        ) ([]models.User, int64, error)
+        UpdateUser(input *models.User) error
+        DeleteUser(id uint) error
+}
+
+func NewUserRepository(db *gorm.DB) *UserRepository <span class="cov0" title="0">{
+        return &amp;UserRepository{db}
+}</span>
+
+func (userRepo *UserRepository) CreateUser(input *models.User) error <span class="cov0" title="0">{
+        return userRepo.db.Create(input).Error
+}</span>
+
+func (userRepo *UserRepository) ReadUser(id uint) *models.User <span class="cov0" title="0">{
+        var user *models.User
+        userRepo.db.First(&amp;user, id)
+
+        return user
+}</span>
+
+func (userRepo *UserRepository) GetUsers(
+        perPage, page int,
+        fullName *string,
+) ([]models.User, int64, error) <span class="cov0" title="0">{
+        var users []models.User
+        var total int64
+
+        var query models.User
+        if fullName != nil </span><span class="cov0" title="0">{
+                query.FullName = *fullName
+        }</span>
+
+        <span class="cov0" title="0">err := userRepo.db.Model(&amp;models.User{}).Where(query).Count(&amp;total).Error
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, err
+        }</span>
+
+        <span class="cov0" title="0">userRepo.db.Where(query).Find(&amp;users)
+
+        return users, total, nil</span>
+}
+
+func (userRepo *UserRepository) UpdateUser(input *models.User) error <span class="cov0" title="0">{
+        return userRepo.db.Save(input).Error
+}</span>
+
+func (userRepo *UserRepository) DeleteUser(id uint) error <span class="cov0" title="0">{
+        return userRepo.db.Delete(&amp;models.User{}, id).Error
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package services
+
+import (
+        "github.com/tricong1998/go-ecom/internal/models"
+        "github.com/tricong1998/go-ecom/internal/repository"
+)
+
+type UserService struct {
+        UserRepo repository.IUserRepository
+}
+
+type IUserService interface {
+        CreateUser(input *models.User) error
+        ReadUser(id uint) *models.User
+        GetUsers(
+                perPage, page int,
+                username *string,
+        ) ([]models.User, int64, error)
+        UpdateUser(user *models.User) error
+        DeleteUser(id uint) error
+}
+
+func NewUserService(userRepo repository.IUserRepository) *UserService <span class="cov8" title="1">{
+        return &amp;UserService{userRepo}
+}</span>
+
+func (us *UserService) CreateUser(user *models.User) error <span class="cov8" title="1">{
+        err := us.UserRepo.CreateUser(user)
+        return err
+}</span>
+
+func (us *UserService) ReadUser(id uint) *models.User <span class="cov0" title="0">{
+        user := us.UserRepo.ReadUser(id)
+        return user
+}</span>
+
+func (us *UserService) GetUsers(
+        perPage, page int,
+        fullName *string,
+) ([]models.User, int64, error) <span class="cov0" title="0">{
+        return us.UserRepo.GetUsers(perPage, page, fullName)
+}</span>
+
+func (us *UserService) UpdateUser(user *models.User) error <span class="cov0" title="0">{
+        err := us.UserRepo.UpdateUser(user)
+        return err
+}</span>
+
+func (us *UserService) DeleteUser(id uint) error <span class="cov0" title="0">{
+        return us.UserRepo.DeleteUser(id)
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package logger
+
+import (
+        "os"
+
+        "github.com/rs/zerolog"
+)
+
+func NewLogger() zerolog.Logger <span class="cov0" title="0">{
+        return zerolog.New(os.Stdout).With().Timestamp().Logger()
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

@@ -11,9 +11,9 @@ type UserService struct {
 
 type IUserService interface {
 	CreateUser(input *models.User) error
-	ReadUser(id uint) *models.User
-	GetUsers(
-		perPage, page int,
+	ReadUser(id uint) (*models.User, error)
+	ListUsers(
+		perPage, page int32,
 		username *string,
 	) ([]models.User, int64, error)
 	UpdateUser(user *models.User) error
@@ -29,16 +29,16 @@ func (us *UserService) CreateUser(user *models.User) error {
 	return err
 }
 
-func (us *UserService) ReadUser(id uint) *models.User {
-	user := us.UserRepo.ReadUser(id)
-	return user
+func (us *UserService) ReadUser(id uint) (*models.User, error) {
+	user, err := us.UserRepo.ReadUser(id)
+	return user, err
 }
 
-func (us *UserService) GetUsers(
-	perPage, page int,
-	fullName *string,
+func (us *UserService) ListUsers(
+	perPage, page int32,
+	username *string,
 ) ([]models.User, int64, error) {
-	return us.UserRepo.GetUsers(perPage, page, fullName)
+	return us.UserRepo.ListUsers(perPage, page, username)
 }
 
 func (us *UserService) UpdateUser(user *models.User) error {

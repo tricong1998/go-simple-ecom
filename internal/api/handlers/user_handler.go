@@ -44,10 +44,10 @@ func (userHandler *UserHandler) ReadUser(ctx *gin.Context) {
 		return
 	}
 
-	user := userHandler.UserService.ReadUser(uint(readUserRequest.ID))
-	if user == nil {
+	user, err := userHandler.UserService.ReadUser(uint(readUserRequest.ID))
+	if err != nil {
 		err := fmt.Errorf("user not found: %d", readUserRequest.ID)
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return
 	}
 
@@ -71,7 +71,6 @@ func (userHandler *UserHandler) UpdateUser(ctx *gin.Context) {
 		Username: input.Username,
 		FullName: input.FullName,
 	}
-	fmt.Println(user, readUserRequest)
 	user.ID = readUserRequest.ID
 	if err := userHandler.UserService.UpdateUser(&user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -83,12 +82,12 @@ func (userHandler *UserHandler) UpdateUser(ctx *gin.Context) {
 
 func (userHandler *UserHandler) ListUsers(ctx *gin.Context) {
 	var req dto.ListUserQuery
-	if err := ctx.ShouldBindQuery((&req)); err != nil {
+	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	users, total, err := userHandler.UserService.GetUsers(int(req.PerPage), int(req.Page), req.Username)
+	users, total, err := userHandler.UserService.ListUsers(req.PerPage, req.Page, req.Username)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

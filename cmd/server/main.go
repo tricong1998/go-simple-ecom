@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tricong1998/go-ecom/internal/api"
 	"github.com/tricong1998/go-ecom/internal/config"
-	"github.com/tricong1998/go-ecom/pkg/database"
+	"github.com/tricong1998/go-ecom/internal/database"
 	"github.com/tricong1998/go-ecom/pkg/logger"
 )
 
