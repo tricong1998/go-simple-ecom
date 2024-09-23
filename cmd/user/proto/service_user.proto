@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package pb;
+
+import "rpc_read_user.proto";
+import "google/api/annotations.proto";
+import "user.proto";
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/user/pb";
+
+service UserGrpc {
+  rpc ReadUser(ReadUserRequest) returns (User) {
+    option (google.api.http) = {
+        get: "/v1/read_user/{id}"
+      };
+  }
+}

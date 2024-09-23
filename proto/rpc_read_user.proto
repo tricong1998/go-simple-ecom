@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pb;
+
+import "user.proto";
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/user/pb";
+
+message ReadUserRequest {
+  string id = 1;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}

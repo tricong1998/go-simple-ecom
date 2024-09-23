@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package pb;
+
+import "rpc_read_user.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/Sotatek-CongNguyen/simple-bank-practice/pb";
+
+service SimpleBank {
+  rpc ReadUser(ReadUserRequest) returns (User) {
+    option (google.api.http) = {
+        get: "/v1/read_user"
+        body: "*"
+      };
+  }
+}

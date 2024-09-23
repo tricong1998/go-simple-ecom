@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/Sotatek-CongNguyen/simple-bank-practice/pb";
+
+message User {
+  string username = 1;
+  string full_name = 2;
+}

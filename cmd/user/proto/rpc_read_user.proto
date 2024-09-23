@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/user/pb";
+
+message ReadUserRequest {
+  uint64 id = 1;
+}
