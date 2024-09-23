@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/tricong1998/go-ecom/cmd/order/internal/mocks"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/models"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/services"
+	"github.com/tricong1998/go-ecom/cmd/user/pkg/pb"
 )
 
 func expectBodyOrder(t *testing.T, w *httptest.ResponseRecorder, mockResponse *models.Order) {
@@ -33,29 +35,48 @@ func expectBodyOrder(t *testing.T, w *httptest.ResponseRecorder, mockResponse *m
 func TestCreateOrder(t *testing.T) {
 	testCases := []struct {
 		name           string
-		setupInputFunc func(input *dto.CreateOrderDto, mockResponse *models.Order)
-		mockFunc       func(userRepo *mocks.MockOrderRepository, mockResponse *models.Order)
-		expectFunc     func(w *httptest.ResponseRecorder, mockResponse *models.Order)
+		setupInputFunc func(input *dto.CreateOrderDto, mockResponse *models.Order, userMock *pb.User)
+		mockFunc       func(
+			userRepo *mocks.MockOrderRepository,
+			mockResponse *models.Order,
+			userGateway *mocks.MockUserGateway,
+			mockUser *pb.User,
+			publisher *mocks.MockRabbitPublisher,
+		)
+		expectFunc func(w *httptest.ResponseRecorder, mockResponse *models.Order)
 	}{
 		{
 			name: "OK",
-			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order) {
+			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order, userMock *pb.User) {
 				input.UserId = 1
 				input.ProductId = 1
+				input.ProductCount = 1
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
 				mockResponse.UserId = input.UserId
 				mockResponse.ProductId = input.ProductId
-
+				userMock.Id = uint64(input.UserId)
+				userMock.Username = "test"
+				userMock.FullName = "user full name"
 			},
-			mockFunc: func(userRepo *mocks.MockOrderRepository, mockResponse *models.Order) {
+			mockFunc: func(
+				userRepo *mocks.MockOrderRepository,
+				mockResponse *models.Order,
+				userGateway *mocks.MockUserGateway,
+				mockUser *pb.User,
+				publisher *mocks.MockRabbitPublisher,
+			) {
 				userRepo.On("CreateOrder", mock.AnythingOfType("*models.Order")).Return(nil).Run(func(args mock.Arguments) {
 					arg := args.Get(0).(*models.Order)
 					arg.ID = mockResponse.ID
 					arg.CreatedAt = mockResponse.CreatedAt
 					arg.UpdatedAt = mockResponse.UpdatedAt
 				})
+				userGateway.On("Get",
+					context.Background(),
+					mock.AnythingOfType("uint")).Return(mockUser, nil)
+				publisher.On("PublishMessage", mock.AnythingOfType("dto.CreateUserPoint")).Return(nil)
 			},
 			expectFunc: func(w *httptest.ResponseRecorder, mockResponse *models.Order) {
 				assert.Equal(t, http.StatusCreated, w.Code)
@@ -64,9 +85,18 @@ func TestCreateOrder(t *testing.T) {
 		},
 		{
 			name: "BadInput",
-			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order) {
+			setupInputFunc: func(input *dto.CreateOrderDto,
+				mockResponse *models.Order,
+				userMock *pb.User,
+			) {
 			},
-			mockFunc: func(userRepo *mocks.MockOrderRepository, mockResponse *models.Order) {
+			mockFunc: func(
+				userRepo *mocks.MockOrderRepository,
+				mockResponse *models.Order,
+				userGateway *mocks.MockUserGateway,
+				mockUser *pb.User,
+				publisher *mocks.MockRabbitPublisher,
+			) {
 				userRepo.On("CreateOrder", mock.AnythingOfType("*models.Order")).Return(nil).Run(func(args mock.Arguments) {
 					arg := args.Get(0).(*models.Order)
 					arg.ID = mockResponse.ID
@@ -80,16 +110,26 @@ func TestCreateOrder(t *testing.T) {
 		},
 		{
 			name: "CreateOrderError",
-			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order) {
+			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order, userMock *pb.User) {
 				input.ProductId = 1
 				input.UserId = 1
+				input.ProductCount = 1
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
 			},
-			mockFunc: func(userRepo *mocks.MockOrderRepository, mockResponse *models.Order) {
+			mockFunc: func(
+				userRepo *mocks.MockOrderRepository,
+				mockResponse *models.Order,
+				userGateway *mocks.MockUserGateway,
+				mockUser *pb.User,
+				publisher *mocks.MockRabbitPublisher,
+			) {
 				err := errors.New("Error")
 				userRepo.On("CreateOrder", mock.AnythingOfType("*models.Order")).Return(err)
+				userGateway.On("Get",
+					context.Background(),
+					mock.AnythingOfType("uint")).Return(mockUser, nil)
 			},
 			expectFunc: func(w *httptest.ResponseRecorder, mockResponse *models.Order) {
 				assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -101,12 +141,15 @@ func TestCreateOrder(t *testing.T) {
 		tc := testCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			userRepo := new(mocks.MockOrderRepository)
-			userService := services.NewOrderService(userRepo)
+			publisher := new(mocks.MockRabbitPublisher)
+			userGateway := new(mocks.MockUserGateway)
+			userService := services.NewOrderService(userRepo, userGateway, publisher)
 			userHandler := NewOrderHandler(userService)
 			var user dto.CreateOrderDto
 			var mockResponse models.Order
-			tc.setupInputFunc(&user, &mockResponse)
-			tc.mockFunc(userRepo, &mockResponse)
+			var userMock pb.User
+			tc.setupInputFunc(&user, &mockResponse, &userMock)
+			tc.mockFunc(userRepo, &mockResponse, userGateway, &userMock, publisher)
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -176,7 +219,9 @@ func TestReadOrder(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			userRepo := new(mocks.MockOrderRepository)
-			userService := services.NewOrderService(userRepo)
+			publisher := new(mocks.MockRabbitPublisher)
+			userGateway := new(mocks.MockUserGateway)
+			userService := services.NewOrderService(userRepo, userGateway, publisher)
 			userHandler := NewOrderHandler(userService)
 			var input dto.ReadOrderRequest
 			var mockResponse models.Order
@@ -286,7 +331,9 @@ func TestListOrder(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			userRepo := new(mocks.MockOrderRepository)
-			userService := services.NewOrderService(userRepo)
+			publisher := new(mocks.MockRabbitPublisher)
+			userGateway := new(mocks.MockUserGateway)
+			userService := services.NewOrderService(userRepo, userGateway, publisher)
 			userHandler := NewOrderHandler(userService)
 			var input dto.ListOrderQuery
 			var total int64
@@ -295,7 +342,7 @@ func TestListOrder(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
-			url := fmt.Sprintf("/orders?page=%d&per_page=%d&username=%s", input.Page, input.PerPage, *&input.UserId)
+			url := fmt.Sprintf("/orders?page=%d&per_page=%d&username=%d", input.Page, input.PerPage, *&input.UserId)
 			c.Request, _ = http.NewRequest(http.MethodGet, url, nil)
 
 			// Act
@@ -378,7 +425,9 @@ func TestUpdateOrder(t *testing.T) {
 		tc := testCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			userRepo := new(mocks.MockOrderRepository)
-			userService := services.NewOrderService(userRepo)
+			publisher := new(mocks.MockRabbitPublisher)
+			userGateway := new(mocks.MockUserGateway)
+			userService := services.NewOrderService(userRepo, userGateway, publisher)
 			userHandler := NewOrderHandler(userService)
 			var user dto.CreateOrderDto
 			var mockResponse models.Order

@@ -10,7 +10,9 @@ import (
 
 func SetupRoutes(routes *gin.Engine, db *gorm.DB) {
 	userRepo := repository.NewUserRepository(db)
-	userService := services.NewUserService(userRepo)
+	userPointRepo := repository.NewUserPointRepository(db)
+	userPointService := services.NewUserPointService(userPointRepo)
+	userService := services.NewUserService(userRepo, userPointService)
 	userHandler := handlers.NewUserHandler(userService)
 
 	userGroup := routes.Group("users")

@@ -6,11 +6,14 @@ import (
 	"github.com/tricong1998/go-ecom/cmd/order/internal/gateway/user/grpc"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/models"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/repository"
+	"github.com/tricong1998/go-ecom/cmd/user/pkg/dto"
+	"github.com/tricong1998/go-ecom/pkg/rabbitmq"
 )
 
 type OrderService struct {
-	OrderRepo       repository.IOrderRepository
-	UserGrpcGateway *grpc.Gateway
+	OrderRepo            repository.IOrderRepository
+	UserGrpcGateway      grpc.IUserGateway
+	CreateOrderPublisher rabbitmq.IPublisher
 }
 
 type IOrderService interface {
@@ -24,8 +27,8 @@ type IOrderService interface {
 	DeleteOrder(id uint) error
 }
 
-func NewOrderService(userRepo repository.IOrderRepository, userGateway *grpc.Gateway) *OrderService {
-	return &OrderService{userRepo, userGateway}
+func NewOrderService(userRepo repository.IOrderRepository, userGateway grpc.IUserGateway, createOrderPublisher rabbitmq.IPublisher) *OrderService {
+	return &OrderService{userRepo, userGateway, createOrderPublisher}
 }
 
 func (us *OrderService) CreateOrder(order *models.Order) error {
@@ -34,8 +37,24 @@ func (us *OrderService) CreateOrder(order *models.Order) error {
 		return err
 	}
 	order.Username = user.Username
+	// TODO: calculate amount
+	order.Amount = 1
+
 	err = us.OrderRepo.CreateOrder(order)
-	return err
+	if err != nil {
+		return err
+	}
+
+	createUserPoint := dto.CreateUserPoint{
+		OrderId: order.ID,
+		UserId:  uint(user.Id),
+		Amount:  uint(order.Amount),
+	}
+	err = us.CreateOrderPublisher.PublishMessage(createUserPoint)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (us *OrderService) ReadOrder(id uint) (*models.Order, error) {

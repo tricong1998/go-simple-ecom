@@ -20,9 +20,17 @@ type ServerConfig struct {
 }
 
 type Config struct {
-	Server     ServerConfig
-	UserServer ServerConfig
-	DB         DBConfig
+	Server         ServerConfig
+	UserServer     ServerConfig
+	DB             DBConfig
+	RabbitMQConfig RabbitMQConfig
+}
+
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
 }
 
 func Load() (*Config, error) {
@@ -47,6 +55,12 @@ func Load() (*Config, error) {
 		UserServer: ServerConfig{
 			Port: os.Getenv("USER_GRPC_SERVER_PORT"),
 			Host: os.Getenv("USER_GRPC_SERVER_HOST"),
+		},
+		RabbitMQConfig: RabbitMQConfig{
+			Port:     os.Getenv("AMQP_SERVER_PORT"),
+			Host:     os.Getenv("AMQP_SERVER_HOST"),
+			User:     os.Getenv("AMQP_SERVER_USER"),
+			Password: os.Getenv("AMQP_SERVER_PASSWORD"),
 		},
 	}
 

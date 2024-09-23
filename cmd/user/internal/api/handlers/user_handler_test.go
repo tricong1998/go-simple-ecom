@@ -101,8 +101,11 @@ func TestCreateUser(t *testing.T) {
 	for i := range testCases {
 		tc := testCases[i]
 		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
 			userRepo := new(mocks.MockUserRepository)
-			userService := services.NewUserService(userRepo)
+			userPointRepo := new(mocks.MockUserPointRepository)
+			userPointService := services.NewUserPointService(userPointRepo)
+			userService := services.NewUserService(userRepo, userPointService)
 			userHandler := NewUserHandler(userService)
 			var user dto.CreateUserDto
 			var mockResponse models.User
@@ -177,7 +180,9 @@ func TestReadUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			userRepo := new(mocks.MockUserRepository)
-			userService := services.NewUserService(userRepo)
+			userPointRepo := new(mocks.MockUserPointRepository)
+			userPointService := services.NewUserPointService(userPointRepo)
+			userService := services.NewUserService(userRepo, userPointService)
 			userHandler := NewUserHandler(userService)
 			var input dto.ReadUserRequest
 			var mockResponse models.User
@@ -289,7 +294,9 @@ func TestListUser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
 			userRepo := new(mocks.MockUserRepository)
-			userService := services.NewUserService(userRepo)
+			userPointRepo := new(mocks.MockUserPointRepository)
+			userPointService := services.NewUserPointService(userPointRepo)
+			userService := services.NewUserService(userRepo, userPointService)
 			userHandler := NewUserHandler(userService)
 			var input dto.ListUserQuery
 			var total int64
@@ -380,8 +387,11 @@ func TestUpdateUser(t *testing.T) {
 	for i := range testCases {
 		tc := testCases[i]
 		t.Run(tc.name, func(t *testing.T) {
+			// Arrange
 			userRepo := new(mocks.MockUserRepository)
-			userService := services.NewUserService(userRepo)
+			userPointRepo := new(mocks.MockUserPointRepository)
+			userPointService := services.NewUserPointService(userPointRepo)
+			userService := services.NewUserService(userRepo, userPointService)
 			userHandler := NewUserHandler(userService)
 			var user dto.CreateUserDto
 			var mockResponse models.User

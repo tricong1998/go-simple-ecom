@@ -7,8 +7,9 @@ import (
 )
 
 type CreateOrderDto struct {
-	ProductId int `json:"product_id" binding:"required"`
-	UserId    int `json:"user_id" binding:"required"`
+	ProductId    int `json:"product_id" binding:"required"`
+	UserId       int `json:"user_id" binding:"required"`
+	ProductCount int `json:"product_count" binding:"required"`
 }
 
 type ReadOrderRequest struct {
@@ -16,11 +17,13 @@ type ReadOrderRequest struct {
 }
 
 type OrderResponse struct {
-	ID        uint      `json:"id"`
-	ProductId int       `json:"product_id"`
-	UserId    int       `json:"user_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           uint      `json:"id"`
+	ProductId    int       `json:"product_id"`
+	UserId       int       `json:"user_id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	ProductCount int       `json:"product_count"`
+	Amount       int       `json:"amount"`
 }
 
 type ListOrderQuery struct {
@@ -36,10 +39,12 @@ type ListOrderResponse struct {
 
 func ToOrderResponse(user *models.Order) *OrderResponse {
 	return &OrderResponse{
-		ID:        user.ID,
-		ProductId: user.ProductId,
-		UserId:    user.UserId,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		ID:           user.ID,
+		ProductId:    user.ProductId,
+		UserId:       user.UserId,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		ProductCount: user.ProductCount,
+		Amount:       user.Amount,
 	}
 }

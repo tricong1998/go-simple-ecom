@@ -10,17 +10,21 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type Gateway struct {
+type IUserGateway interface {
+	Get(ctx context.Context, userId uint) (*pb.User, error)
+}
+
+type UserGateway struct {
 	// client pb.UserGrpcClient
 	host string
 	port string
 }
 
-func New(host string, port string) *Gateway {
-	return &Gateway{host, port}
+func New(host string, port string) *UserGateway {
+	return &UserGateway{host, port}
 }
 
-func (g *Gateway) Get(ctx context.Context, userId uint) (*pb.User, error) {
+func (g *UserGateway) Get(ctx context.Context, userId uint) (*pb.User, error) {
 	address := fmt.Sprintf("%s:%s", g.host, g.port)
 
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -29,10 +33,7 @@ func (g *Gateway) Get(ctx context.Context, userId uint) (*pb.User, error) {
 	}
 	defer conn.Close()
 
-	fmt.Println("error")
-
 	client := pb.NewUserGrpcClient(conn)
-	fmt.Println("error2")
 	resp, err := client.ReadUser(ctx, &pb.ReadUserRequest{Id: (uint64)(userId)})
 	if err != nil {
 		log.Println("Error getting user:", err)

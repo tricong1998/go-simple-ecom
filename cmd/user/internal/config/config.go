@@ -24,11 +24,19 @@ type GrpcServerConfig struct {
 	Port string
 }
 
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+}
+
 type Config struct {
-	Server     HttpServerConfig
-	GrpcServer GrpcServerConfig
-	DB         DBConfig
-	Env        string
+	Server         HttpServerConfig
+	GrpcServer     GrpcServerConfig
+	RabbitMQConfig RabbitMQConfig
+	DB             DBConfig
+	Env            string
 }
 
 func Load() (*Config, error) {
@@ -54,6 +62,12 @@ func Load() (*Config, error) {
 			DBUser:     os.Getenv("DB_USER"),
 			DBPassword: os.Getenv("DB_PASSWORD"),
 			DBName:     os.Getenv("DB_NAME"),
+		},
+		RabbitMQConfig: RabbitMQConfig{
+			Port:     os.Getenv("AMQP_SERVER_PORT"),
+			Host:     os.Getenv("AMQP_SERVER_HOST"),
+			User:     os.Getenv("AMQP_SERVER_USER"),
+			Password: os.Getenv("AMQP_SERVER_PASSWORD"),
 		},
 	}
 

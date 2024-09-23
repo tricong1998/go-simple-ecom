@@ -12,7 +12,7 @@ import (
 
 type RabbitMQConfig struct {
 	Host     string
-	Port     int
+	Port     string
 	User     string
 	Password string
 }
@@ -20,7 +20,7 @@ type RabbitMQConfig struct {
 // Initialize new channel for rabbitmq
 func NewRabbitMQConn(cfg *RabbitMQConfig, ctx context.Context) (*amqp.Connection, error) {
 	connAddr := fmt.Sprintf(
-		"amqp://%s:%s@%s:%d/",
+		"amqp://%s:%s@%s:%s/",
 		cfg.User,
 		cfg.Password,
 		cfg.Host,

@@ -26,8 +26,9 @@ func (userHandler *OrderHandler) CreateOrder(ctx *gin.Context) {
 	}
 
 	user := models.Order{
-		ProductId: input.ProductId,
-		UserId:    input.UserId,
+		ProductId:    input.ProductId,
+		UserId:       input.UserId,
+		ProductCount: input.ProductCount,
 	}
 	if err := userHandler.OrderService.CreateOrder(&user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

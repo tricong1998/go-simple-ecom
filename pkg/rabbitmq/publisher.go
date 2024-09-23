@@ -2,11 +2,8 @@ package rabbitmq
 
 import (
 	"context"
-	"reflect"
 	"time"
 
-	"github.com/ahmetb/go-linq/v3"
-	"github.com/iancoleman/strcase"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/rs/zerolog"
 	uuid "github.com/satori/go.uuid"
@@ -16,10 +13,7 @@ import (
 //go:generate mockery --name IPublisher
 type IPublisher interface {
 	PublishMessage(msg interface{}) error
-	IsPublished(msg interface{}) bool
 }
-
-var publishedMessages []string
 
 type Publisher struct {
 	cfg          *RabbitMQConfig
@@ -66,6 +60,7 @@ func (p Publisher) PublishMessage(msg interface{}) error {
 		return err
 	}
 
+	// TODO
 	correlationId := ""
 
 	publishingMsg := amqp.Publishing{
@@ -85,8 +80,6 @@ func (p Publisher) PublishMessage(msg interface{}) error {
 		return err
 	}
 
-	publishedMessages = append(publishedMessages, p.queueName)
-
 	// h, err := jsoniter.Marshal(headers)
 
 	if err != nil {
@@ -97,15 +90,6 @@ func (p Publisher) PublishMessage(msg interface{}) error {
 	p.log.Info().Msgf("Published message: %s", publishingMsg.Body)
 
 	return nil
-}
-
-func (p Publisher) IsPublished(msg interface{}) bool {
-
-	typeName := reflect.TypeOf(msg).Name()
-	snakeTypeName := strcase.ToSnake(typeName)
-	isPublished := linq.From(publishedMessages).Contains(snakeTypeName)
-
-	return isPublished
 }
 
 func NewPublisher(
