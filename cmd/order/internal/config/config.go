@@ -22,6 +22,7 @@ type ServerConfig struct {
 type Config struct {
 	Server         ServerConfig
 	UserServer     ServerConfig
+	PaymentServer  ServerConfig
 	DB             DBConfig
 	RabbitMQConfig RabbitMQConfig
 }
@@ -54,7 +55,11 @@ func Load() (*Config, error) {
 		},
 		UserServer: ServerConfig{
 			Port: os.Getenv("USER_GRPC_SERVER_PORT"),
-			Host: os.Getenv("USER_GRPC_SERVER_HOST"),
+			Host: os.Getenv("ORDER_USER_GRPC_SERVER_HOST"),
+		},
+		PaymentServer: ServerConfig{
+			Port: os.Getenv("PAYMENT_GRPC_SERVER_PORT"),
+			Host: os.Getenv("ORDER_PAYMENT_GRPC_SERVER_HOST"),
 		},
 		RabbitMQConfig: RabbitMQConfig{
 			Port:     os.Getenv("AMQP_SERVER_PORT"),

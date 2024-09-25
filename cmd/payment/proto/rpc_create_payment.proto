@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pb;
+
+import "payment.proto";
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/payment/pb";
+
+message CreatePaymentRequest {
+  uint64 order_id = 1;
+  uint64 user_id = 2;
+  uint64 amount = 3;
+  string method = 4;
+}
+
+message CreatePaymentResponse {
+  Payment payment = 1;
+}

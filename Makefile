@@ -12,16 +12,19 @@ GOLINT=golangci-lint
 
 # SERVICE PATH
 PATH_USER= ./cmd/user
+PATH_PAYMENT= ./cmd/payment
 
 # Main package path
 MAIN_PATH_USER=$(PATH_USER)/cmd
 MAIN_PATH_ORDER=./cmd/order/cmd
 MAIN_PATH_PRODUCT=./cmd/product/cmd
+MAIN_PATH_PAYMENT=$(PATH_PAYMENT)/cmd
 
 # Binary name
 BINARY_NAME_ORDER=order
 BINARY_NAME_PRODUCT=product
 BINARY_NAME_USER=user
+BINARY_NAME_PAYMENT=payment
 
 # Build the project
 build_order:
@@ -32,6 +35,9 @@ build_product:
 
 build_user:
 	$(GOBUILD) -o $(BINARY_NAME_USER) -v $(MAIN_PATH_USER)
+
+build_payment:
+	$(GOBUILD) -o $(BINARY_NAME_PAYMENT) -v $(MAIN_PATH_PAYMENT)
 
 # Run the project
 run_order:
@@ -46,6 +52,9 @@ run_product:
 	$(GOBUILD) -o $(BINARY_NAME_PRODUCT) -v $(MAIN_PATH_PRODUCT)
 	./$(BINARY_NAME_PRODUCT)	
 
+run_payment:
+	$(GOBUILD) -o $(BINARY_NAME_PAYMENT) -v $(MAIN_PATH_PAYMENT)
+	./$(BINARY_NAME_PAYMENT)
 
 # Clean build files
 clean:
@@ -92,6 +101,13 @@ proto-user:
     --go-grpc_out=$(PATH_USER)/pkg/pb --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=$(PATH_USER)/pkg/pb --grpc-gateway_opt paths=source_relative \
     $(PATH_USER)/proto/*.proto
+
+proto-payment:
+	rm -f $(PATH_PAYMENT)/pkg/pb/*.go
+	protoc --proto_path=$(PATH_PAYMENT)/proto --go_out=$(PATH_PAYMENT)/pkg/pb --go_opt=paths=source_relative \
+    --go-grpc_out=$(PATH_PAYMENT)/pkg/pb --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=$(PATH_PAYMENT)/pkg/pb --grpc-gateway_opt paths=source_relative \
+    $(PATH_PAYMENT)/proto/*.proto
 
 # Help command
 help:

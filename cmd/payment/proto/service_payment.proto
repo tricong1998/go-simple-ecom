@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package pb;
+
+import "rpc_read_payment.proto";
+import "rpc_create_payment.proto";
+import "google/api/annotations.proto";
+import "payment.proto";
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/payment/pb";
+
+service PaymentGrpc {
+  rpc ReadPayment(ReadPaymentRequest) returns (Payment) {
+    option (google.api.http) = {
+        get: "/v1/read_payment/{id}"
+      };
+  }
+
+  rpc CreatePayment(CreatePaymentRequest) returns (CreatePaymentResponse) {
+    option (google.api.http) = {
+        post: "/v1/create_payment"
+        body: "*"
+      };
+  }
+}

@@ -6,7 +6,7 @@ import (
 )
 
 type OrderRepository struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 type IOrderRepository interface {
@@ -18,19 +18,25 @@ type IOrderRepository interface {
 	) ([]models.Order, int64, error)
 	UpdateOrder(input *models.Order) error
 	DeleteOrder(id uint) error
+	Begin() *gorm.DB
+	UpdateOrderStatusWithTx(tx *gorm.DB, orderId uint, status string) error
 }
 
 func NewOrderRepository(db *gorm.DB) *OrderRepository {
 	return &OrderRepository{db}
 }
 
+func (orderRepo *OrderRepository) Begin() *gorm.DB {
+	return orderRepo.DB.Begin()
+}
+
 func (orderRepo *OrderRepository) CreateOrder(input *models.Order) error {
-	return orderRepo.db.Create(input).Error
+	return orderRepo.DB.Create(input).Error
 }
 
 func (userRepo *OrderRepository) ReadOrder(id uint) (*models.Order, error) {
 	var user *models.Order
-	err := userRepo.db.First(&user, id).Error
+	err := userRepo.DB.First(&user, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -49,20 +55,24 @@ func (userRepo *OrderRepository) ListOrders(
 		query.UserId = username
 	}
 
-	err := userRepo.db.Model(&models.Order{}).Where(query).Count(&total).Error
+	err := userRepo.DB.Model(&models.Order{}).Where(query).Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	userRepo.db.Where(query).Find(&users)
+	userRepo.DB.Where(query).Find(&users)
 
 	return users, total, nil
 }
 
 func (userRepo *OrderRepository) UpdateOrder(input *models.Order) error {
-	return userRepo.db.Save(input).Error
+	return userRepo.DB.Save(input).Error
 }
 
 func (userRepo *OrderRepository) DeleteOrder(id uint) error {
-	return userRepo.db.Delete(&models.Order{}, id).Error
+	return userRepo.DB.Delete(&models.Order{}, id).Error
+}
+
+func (userRepo *OrderRepository) UpdateOrderStatusWithTx(tx *gorm.DB, orderId uint, status string) error {
+	return tx.Model(&models.Order{}).Where("id = ?", orderId).Update("status", status).Error
 }

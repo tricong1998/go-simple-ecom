@@ -8,7 +8,8 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/api/handlers"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/config"
-	"github.com/tricong1998/go-ecom/cmd/order/internal/gateway/user/grpc"
+	paymentGrpc "github.com/tricong1998/go-ecom/cmd/order/internal/gateway/payment/grpc"
+	userGrpc "github.com/tricong1998/go-ecom/cmd/order/internal/gateway/user/grpc"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/repository"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/services"
 	"github.com/tricong1998/go-ecom/pkg/rabbitmq"
@@ -24,7 +25,8 @@ func SetupRoutes(
 	log zerolog.Logger,
 ) {
 	userRepo := repository.NewOrderRepository(db)
-	userGateway := grpc.New(cfg.UserServer.Host, cfg.UserServer.Port)
+	userGateway := userGrpc.New(cfg.UserServer.Host, cfg.UserServer.Port)
+	paymentGateway := paymentGrpc.New(cfg.PaymentServer.Host, cfg.PaymentServer.Port)
 	createOrderPublisher := rabbitmq.NewPublisher(
 		context.Background(),
 		rabbitCfg,
@@ -34,7 +36,7 @@ func SetupRoutes(
 		"direct",
 		rabbitmq.PAYMENT_ORDER_COMPLETED_QUEUE,
 	)
-	userService := services.NewOrderService(userRepo, userGateway, createOrderPublisher)
+	userService := services.NewOrderService(userRepo, userGateway, paymentGateway, createOrderPublisher)
 	userHandler := handlers.NewOrderHandler(userService)
 
 	userGroup := routes.Group("orders")
