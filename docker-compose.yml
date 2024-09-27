@@ -6,9 +6,112 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: message-broker
     ports:
-      - 5672:5672 # for sender and consumer connections
-      - 15672:15672 # for serve RabbitMQ GUI
+      - "${AMQP_SERVER_PORT}:${AMQP_SERVER_PORT}" # for sender and consumer connections
+      - "${AMQP_SERVER_GUI_PORT}:${AMQP_SERVER_GUI_PORT}" # for serve RabbitMQ GUI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - go-ecom-network  
+    healthcheck:
+      test: >
+        /bin/sh -c "rabbitmqctl status"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    # build:
+    #   context: ./postgres
+    #   dockerfile: Dockerfile
+    container_name: postgres
+    image: postgres:16-alpine
+    ports:
+      - ${DOCKER_DB_PORT}:${DB_PORT}
+    environment:
+      - POSTGRES_USER=${DOCKER_DB_USER}
+      - POSTGRES_PASSWORD=${DOCKER_DB_PASSWORD}
+      - POSTGRES_MULTIPLE_DATABASES=${USER_DB_NAME},${ORDER_DB_NAME},${PAYMENT_DB_NAME}
+    networks:
+      - go-ecom-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: >
+        /bin/sh -c "
+        pg_isready -d ${USER_DB_NAME} -U ${DOCKER_DB_USER} &&
+        pg_isready -d ${ORDER_DB_NAME} -U ${DOCKER_DB_USER} &&
+        pg_isready -d ${PAYMENT_DB_NAME} -U ${DOCKER_DB_USER}
+        "      
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${ORDER_SERVER_PORT}:${ORDER_SERVER_PORT}"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DOCKER_DB_USER}
+      - DB_PASSWORD=${DOCKER_DB_PASSWORD}
+      - DB_NAME=${ORDER_DB_NAME}
+      - AMQP_SERVER_HOST=message-broker
+    depends_on:
+      - message-broker
+      - user-service
+      - payment-service
+    networks:
+      - go-ecom-network
+    command: ./order
+    restart: always
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${USER_SERVER_PORT}:${USER_SERVER_PORT}"
+      - "${USER_GRPC_SERVER_PORT}:${USER_GRPC_SERVER_PORT}"
+    depends_on:
+      - message-broker
+    networks:
+      - go-ecom-network
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DOCKER_DB_USER}
+      - DB_PASSWORD=${DOCKER_DB_PASSWORD}
+      - DB_NAME=${USER_DB_NAME}
+      - AMQP_SERVER_HOST=message-broker
+    command: ./user
+    restart: always
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PAYMENT_SERVER_PORT}:${PAYMENT_SERVER_PORT}"
+      - "${PAYMENT_GRPC_SERVER_PORT}:${PAYMENT_GRPC_SERVER_PORT}"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DOCKER_DB_USER}
+      - DB_PASSWORD=${DOCKER_DB_PASSWORD}
+      - DB_NAME=${PAYMENT_DB_NAME}
+    depends_on:
+      - message-broker
+    networks:
+      - go-ecom-network
+    command: ./payment
+    restart: always
+
 volumes:
   rabbitmq_data:
+  postgres-data:
+
+networks:
+  go-ecom-network:
