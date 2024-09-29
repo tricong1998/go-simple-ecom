@@ -28,7 +28,7 @@ services:
     ports:
       - ${DB_PORT}:${DOCKER_DB_PORT}
     environment:
-      - POSTGRES_USER=${DOCKER_DB_USER}
+      - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DOCKER_DB_PASSWORD}
       - POSTGRES_MULTIPLE_DATABASES=${USER_DB_NAME},${ORDER_DB_NAME},${PAYMENT_DB_NAME},${PRODUCT_DB_NAME}
     networks:
@@ -39,10 +39,10 @@ services:
     healthcheck:
       test: >
         /bin/sh -c "
-        pg_isready -d ${USER_DB_NAME} -U ${DOCKER_DB_USER} &&
-        pg_isready -d ${ORDER_DB_NAME} -U ${DOCKER_DB_USER} &&
-        pg_isready -d ${PAYMENT_DB_NAME} -U ${DOCKER_DB_USER} &&
-        pg_isready -d ${PRODUCT_DB_NAME} -U ${DOCKER_DB_USER}
+        pg_isready -d ${USER_DB_NAME} -U ${DB_USER} &&
+        pg_isready -d ${ORDER_DB_NAME} -U ${DB_USER} &&
+        pg_isready -d ${PAYMENT_DB_NAME} -U ${DB_USER} &&
+        pg_isready -d ${PRODUCT_DB_NAME} -U ${DB_USER}
         "      
       interval: 5s
       timeout: 5s
@@ -57,7 +57,7 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=${DOCKER_DB_PORT}
-      - DB_USER=${DOCKER_DB_USER}
+      - DB_USER=${DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${ORDER_DB_NAME}
       - AMQP_SERVER_HOST=message-broker
@@ -87,7 +87,7 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=${DOCKER_DB_PORT}
-      - DB_USER=${DOCKER_DB_USER}
+      - DB_USER=${DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${USER_DB_NAME}
       - AMQP_SERVER_HOST=message-broker
@@ -103,7 +103,7 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=${DOCKER_DB_PORT}
-      - DB_USER=${DOCKER_DB_USER}
+      - DB_USER=${DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${PAYMENT_DB_NAME}
     depends_on:
@@ -128,7 +128,7 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=${DOCKER_DB_PORT}
-      - DB_USER=${DOCKER_DB_USER}
+      - DB_USER=${DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${PRODUCT_DB_NAME}
     command: ./product

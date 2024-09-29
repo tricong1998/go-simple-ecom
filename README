@@ -1,0 +1,23 @@
+### services
+
+- user: Manage user and user point data, authenticate users
+  - create user
+  - login
+  - logout
+  - refresh token
+  - get user info
+- product: Manage product data
+  - create product
+  - get product
+  - update product
+  - delete product
+- order: Manage order data
+  - create order
+  - get order
+  - update order
+  - delete order
+- payment: Manage payment data
+  - create payment
+
+### api
+

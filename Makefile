@@ -14,10 +14,11 @@ GOLINT=golangci-lint
 PATH_USER= ./cmd/user
 PATH_PAYMENT= ./cmd/payment
 PATH_PRODUCT= ./cmd/product
+PATH_ORDER= ./cmd/order
 # Main package path
 MAIN_PATH_USER=$(PATH_USER)/cmd
-MAIN_PATH_ORDER=./cmd/order/cmd
-MAIN_PATH_PRODUCT=./cmd/product/cmd
+MAIN_PATH_ORDER=$(PATH_ORDER)/cmd
+MAIN_PATH_PRODUCT=$(PATH_PRODUCT)/cmd
 MAIN_PATH_PAYMENT=$(PATH_PAYMENT)/cmd
 
 # Binary name
@@ -62,10 +63,19 @@ run_payment:
 	$(GOBUILD) -o $(BINARY_NAME_PAYMENT) -v $(MAIN_PATH_PAYMENT)
 	./$(BINARY_NAME_PAYMENT)
 
+run:
+	make run_order
+	make run_product
+	make run_user
+	make run_payment
+
 # Clean build files
 clean:
 	$(GOCLEAN)
-	rm -f $(BINARY_NAME)
+	rm -f $(BINARY_NAME_ORDER)
+	rm -f $(BINARY_NAME_PRODUCT)
+	rm -f $(BINARY_NAME_USER)
+	rm -f $(BINARY_NAME_PAYMENT)
 
 # Run tests
 test:
@@ -92,9 +102,18 @@ update-deps:
 
 # Build for multiple platforms
 build-all:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
-	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_ORDER)-linux-amd64 $(MAIN_PATH_ORDER)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_ORDER)-windows-amd64.exe $(MAIN_PATH_ORDER)
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_ORDER)-darwin-amd64 $(MAIN_PATH_ORDER)
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_PRODUCT)-linux-amd64 $(MAIN_PATH_PRODUCT)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_PRODUCT)-windows-amd64.exe $(MAIN_PATH_PRODUCT)
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_PRODUCT)-darwin-amd64 $(MAIN_PATH_PRODUCT)
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_USER)-linux-amd64 $(MAIN_PATH_USER)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_USER)-windows-amd64.exe $(MAIN_PATH_USER)
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_USER)-darwin-amd64 $(MAIN_PATH_USER)
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_PAYMENT)-linux-amd64 $(MAIN_PATH_PAYMENT)
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_PAYMENT)-windows-amd64.exe $(MAIN_PATH_PAYMENT)
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME_PAYMENT)-darwin-amd64 $(MAIN_PATH_PAYMENT)
 
 setup-dev:
 	cp .env.example .env
@@ -139,7 +158,15 @@ help:
 	@echo "Available commands:"
 	@echo "  make setup-dev     - Setup development environment"
 	@echo "  make build         - Build the project"
+	@echo "  make build_order   - Build the order project"
+	@echo "  make build_product - Build the product project"
+	@echo "  make build_user    - Build the user project"
+	@echo "  make build_payment - Build the payment project"
 	@echo "  make run           - Run the project"
+	@echo "  make run_order     - Run the order project"
+	@echo "  make run_product   - Run the product project"
+	@echo "  make run_user      - Run the user project"
+	@echo "  make run_payment   - Run the payment project"
 	@echo "  make clean         - Clean build files"
 	@echo "  make test          - Run tests"
 	@echo "  make test-coverage - Run tests with coverage"
@@ -148,5 +175,8 @@ help:
 	@echo "  make update-deps   - Update dependencies"
 	@echo "  make build-all     - Build for multiple platforms"
 	@echo "  make generate-admin-account admin=your_admin password=your_password - Generate admin account with admin and password"
+	@echo "  make proto-user    - Generate proto for user"
+	@echo "  make proto-payment    - Generate proto for payment"
+	@echo "  make proto-product    - Generate proto for product"
 
-.PHONY: build run clean test test-coverage lint deps update-deps build-all help proto
+.PHONY: build run clean test test-coverage lint deps update-deps build-all help proto-user proto-payment proto-product generate-admin-account
