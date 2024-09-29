@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -80,14 +81,15 @@ func (p Publisher) PublishMessage(msg interface{}) error {
 		return err
 	}
 
-	// h, err := jsoniter.Marshal(headers)
+	// // h, err := jsoniter.Marshal(headers)
 
-	if err != nil {
-		p.log.Fatal().Err(err).Msg("Error in marshalling headers to publish message")
-		return err
-	}
+	// if err != nil {
+	// 	p.log.Fatal().Err(err).Msg("Error in marshalling headers to publish message")
+	// 	return err
+	// }
 
-	p.log.Info().Msgf("Published message: %s", publishingMsg.Body)
+	fmt.Printf("Published message: %s", string(publishingMsg.Body))
+	p.log.Info().Msgf("Published message: %s", string(publishingMsg.Body))
 
 	return nil
 }

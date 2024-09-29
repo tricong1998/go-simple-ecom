@@ -26,8 +26,9 @@ func (userHandler *ProductHandler) CreateProduct(ctx *gin.Context) {
 	}
 
 	user := models.Product{
-		Name:  input.Name,
-		Price: input.Price,
+		Name:     input.Name,
+		Price:    input.Price,
+		Quantity: input.Quantity,
 	}
 	if err := userHandler.ProductService.CreateProduct(&user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

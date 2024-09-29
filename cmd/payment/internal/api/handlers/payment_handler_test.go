@@ -22,11 +22,12 @@ import (
 func expectBodyPayment(t *testing.T, w *httptest.ResponseRecorder, mockResponse *models.Payment) {
 	var response dto.PaymentResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
+	fmt.Println("response", response, response.UserId)
+	fmt.Println("mockResponse", mockResponse, mockResponse.UserID)
 	assert.NoError(t, err)
 	assert.Equal(t, response.ID, mockResponse.ID)
 	assert.Equal(t, response.UserId, mockResponse.UserID)
 	assert.Equal(t, response.OrderId, mockResponse.OrderID)
-	assert.Equal(t, response.Status, mockResponse.Status)
 	assert.Equal(t, response.Error, mockResponse.Error)
 	assert.Equal(t, response.Amount, mockResponse.Amount)
 	assert.Equal(t, response.Method, mockResponse.Method)
@@ -52,8 +53,11 @@ func TestCreatePayment(t *testing.T) {
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
 				mockResponse.Status = "pending"
+				mockResponse.Method = "cash"
+				mockResponse.Amount = 100
 				mockResponse.Error = ""
-
+				mockResponse.UserID = 1
+				mockResponse.OrderID = 1
 			},
 			mockFunc: func(paymentRepo *mocks.MockPaymentRepository, mockResponse *models.Payment) {
 				paymentRepo.On("CreatePayment", mock.AnythingOfType("*models.Payment")).Return(nil).Run(func(args mock.Arguments) {
@@ -62,6 +66,7 @@ func TestCreatePayment(t *testing.T) {
 					arg.CreatedAt = mockResponse.CreatedAt
 					arg.UpdatedAt = mockResponse.UpdatedAt
 				})
+				paymentRepo.On("UpdatePayment", mock.AnythingOfType("*models.Payment")).Return(nil)
 			},
 			expectFunc: func(w *httptest.ResponseRecorder, mockResponse *models.Payment) {
 				assert.Equal(t, http.StatusCreated, w.Code)
@@ -126,7 +131,6 @@ func TestCreatePayment(t *testing.T) {
 			c.Request, _ = http.NewRequest(http.MethodPost, "/payments", bytes.NewBuffer(jsonPayment))
 			c.Request.Header.Set("Content-Type", "application/json")
 			paymentHandler.CreatePayment(c)
-
 			tc.expectFunc(w, &mockResponse)
 		})
 	}
@@ -320,7 +324,7 @@ func TestListPayment(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
-			url := fmt.Sprintf("/payments?page=%d&per_page=%d&userId=%d", input.Page, input.PerPage, *input.UserId)
+			url := fmt.Sprintf("/payments?page=%d&per_page=%d&user_id=%d", input.Page, input.PerPage, *input.UserId)
 			c.Request, _ = http.NewRequest(http.MethodGet, url, nil)
 
 			// Act

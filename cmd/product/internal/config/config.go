@@ -14,14 +14,20 @@ type DBConfig struct {
 	DBName     string
 }
 
-type ServerConfig struct {
+type HttpServerConfig struct {
+	Host string
+	Port string
+}
+
+type GrpcServerConfig struct {
 	Host string
 	Port string
 }
 
 type Config struct {
-	Server ServerConfig
-	DB     DBConfig
+	Server     HttpServerConfig
+	GrpcServer GrpcServerConfig
+	DB         DBConfig
 }
 
 func Load() (*Config, error) {
@@ -32,16 +38,20 @@ func Load() (*Config, error) {
 	}
 
 	config := &Config{
-		Server: ServerConfig{
+		Server: HttpServerConfig{
 			Port: os.Getenv("PRODUCT_SERVER_PORT"),
 			Host: os.Getenv("PRODUCT_SERVER_HOST"),
+		},
+		GrpcServer: GrpcServerConfig{
+			Host: os.Getenv("PRODUCT_GRPC_SERVER_HOST"),
+			Port: os.Getenv("PRODUCT_GRPC_SERVER_PORT"),
 		},
 		DB: DBConfig{
 			DBHost:     os.Getenv("DB_HOST"),
 			DBPort:     os.Getenv("DB_PORT"),
 			DBUser:     os.Getenv("DB_USER"),
 			DBPassword: os.Getenv("DB_PASSWORD"),
-			DBName:     os.Getenv("DB_NAME"),
+			DBName:     os.Getenv("PRODUCT_DB_NAME"),
 		},
 	}
 

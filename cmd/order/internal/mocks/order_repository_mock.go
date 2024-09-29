@@ -21,9 +21,9 @@ func (m *MockOrderRepository) ReadOrder(id uint) (*models.Order, error) {
 
 func (m *MockOrderRepository) ListOrders(
 	perPage, page int32,
-	username int,
+	userId uint,
 ) ([]models.Order, int64, error) {
-	args := m.Called(perPage, page, username)
+	args := m.Called(perPage, page, userId)
 	return args.Get(0).([]models.Order), args.Get(1).(int64), args.Error(2)
 }
 
@@ -34,5 +34,10 @@ func (m *MockOrderRepository) UpdateOrder(user *models.Order) error {
 
 func (m *MockOrderRepository) DeleteOrder(id uint) error {
 	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m *MockOrderRepository) UpdateOrderStatus(orderId uint, status string) error {
+	args := m.Called(orderId, status)
 	return args.Error(0)
 }

@@ -18,7 +18,9 @@ import (
 	"github.com/tricong1998/go-ecom/cmd/order/internal/mocks"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/models"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/services"
-	"github.com/tricong1998/go-ecom/cmd/user/pkg/pb"
+	paymentPb "github.com/tricong1998/go-ecom/cmd/payment/pkg/pb"
+	productPb "github.com/tricong1998/go-ecom/cmd/product/pkg/pb"
+	userPb "github.com/tricong1998/go-ecom/cmd/user/pkg/pb"
 )
 
 func expectBodyOrder(t *testing.T, w *httptest.ResponseRecorder, mockResponse *models.Order) {
@@ -35,27 +37,57 @@ func expectBodyOrder(t *testing.T, w *httptest.ResponseRecorder, mockResponse *m
 func TestCreateOrder(t *testing.T) {
 	testCases := []struct {
 		name           string
-		setupInputFunc func(input *dto.CreateOrderDto, mockResponse *models.Order, userMock *pb.User)
-		mockFunc       func(
+		setupInputFunc func(
+			input *dto.CreateOrderDto,
+			mockResponse *models.Order,
+			userMock *userPb.User,
+			mockProduct *productPb.ReadProductResponse,
+			mockPayment *paymentPb.CreatePaymentResponse,
+		)
+		mockFunc func(
 			userRepo *mocks.MockOrderRepository,
 			mockResponse *models.Order,
 			userGateway *mocks.MockUserGateway,
-			mockUser *pb.User,
+			productGateway *mocks.MockProductGateway,
+			paymentGateway *mocks.MockPaymentGateway,
+			mockUser *userPb.User,
+			mockProduct *productPb.ReadProductResponse,
+			mockPayment *paymentPb.CreatePaymentResponse,
 			publisher *mocks.MockRabbitPublisher,
 		)
-		expectFunc func(w *httptest.ResponseRecorder, mockResponse *models.Order)
+		expectFunc func(
+			w *httptest.ResponseRecorder, mockResponse *models.Order)
 	}{
 		{
 			name: "OK",
-			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order, userMock *pb.User) {
+			setupInputFunc: func(input *dto.CreateOrderDto,
+				mockResponse *models.Order,
+				userMock *userPb.User,
+				mockProduct *productPb.ReadProductResponse,
+				mockPayment *paymentPb.CreatePaymentResponse,
+			) {
 				input.UserId = 1
 				input.ProductId = 1
 				input.ProductCount = 1
+				product := productPb.Product{
+					Id:       uint64(input.ProductId),
+					Name:     "product name",
+					Price:    100,
+					Quantity: 10,
+				}
+				mockProduct.Product = &product
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
 				mockResponse.UserId = input.UserId
 				mockResponse.ProductId = input.ProductId
+				mockResponse.ProductCount = input.ProductCount
+				mockResponse.Amount = uint(mockProduct.Product.Price) * uint(input.ProductCount)
+				payment := paymentPb.Payment{
+					Id:     uint64(1),
+					Amount: uint64(mockResponse.Amount),
+				}
+				mockPayment.Payment = &payment
 				userMock.Id = uint64(input.UserId)
 				userMock.Username = "test"
 				userMock.FullName = "user full name"
@@ -64,7 +96,11 @@ func TestCreateOrder(t *testing.T) {
 				userRepo *mocks.MockOrderRepository,
 				mockResponse *models.Order,
 				userGateway *mocks.MockUserGateway,
-				mockUser *pb.User,
+				productGateway *mocks.MockProductGateway,
+				paymentGateway *mocks.MockPaymentGateway,
+				mockUser *userPb.User,
+				mockProduct *productPb.ReadProductResponse,
+				mockPayment *paymentPb.CreatePaymentResponse,
 				publisher *mocks.MockRabbitPublisher,
 			) {
 				userRepo.On("CreateOrder", mock.AnythingOfType("*models.Order")).Return(nil).Run(func(args mock.Arguments) {
@@ -73,9 +109,21 @@ func TestCreateOrder(t *testing.T) {
 					arg.CreatedAt = mockResponse.CreatedAt
 					arg.UpdatedAt = mockResponse.UpdatedAt
 				})
+				userRepo.On("UpdateOrderStatus", mock.AnythingOfType("uint"), mock.AnythingOfType("string")).Return(nil)
 				userGateway.On("Get",
 					context.Background(),
 					mock.AnythingOfType("uint")).Return(mockUser, nil)
+				productGateway.On("Get",
+					context.Background(),
+					mock.AnythingOfType("uint")).Return(mockProduct, nil)
+				productGateway.On("UpdateProductQuantity",
+					context.Background(),
+					mock.AnythingOfType("uint"),
+					mock.AnythingOfType("uint")).Return(true, nil)
+				paymentGateway.On("Create",
+					context.Background(),
+					mock.AnythingOfType("*pb.CreatePaymentRequest")).
+					Return(mockPayment, nil)
 				publisher.On("PublishMessage", mock.AnythingOfType("dto.CreateUserPoint")).Return(nil)
 			},
 			expectFunc: func(w *httptest.ResponseRecorder, mockResponse *models.Order) {
@@ -87,14 +135,20 @@ func TestCreateOrder(t *testing.T) {
 			name: "BadInput",
 			setupInputFunc: func(input *dto.CreateOrderDto,
 				mockResponse *models.Order,
-				userMock *pb.User,
+				userMock *userPb.User,
+				mockProduct *productPb.ReadProductResponse,
+				mockPayment *paymentPb.CreatePaymentResponse,
 			) {
 			},
 			mockFunc: func(
 				userRepo *mocks.MockOrderRepository,
 				mockResponse *models.Order,
 				userGateway *mocks.MockUserGateway,
-				mockUser *pb.User,
+				productGateway *mocks.MockProductGateway,
+				paymentGateway *mocks.MockPaymentGateway,
+				mockUser *userPb.User,
+				mockProduct *productPb.ReadProductResponse,
+				mockPayment *paymentPb.CreatePaymentResponse,
 				publisher *mocks.MockRabbitPublisher,
 			) {
 				userRepo.On("CreateOrder", mock.AnythingOfType("*models.Order")).Return(nil).Run(func(args mock.Arguments) {
@@ -103,6 +157,22 @@ func TestCreateOrder(t *testing.T) {
 					arg.CreatedAt = mockResponse.CreatedAt
 					arg.UpdatedAt = mockResponse.UpdatedAt
 				})
+				userRepo.On("UpdateOrderStatus", mock.AnythingOfType("uint"), mock.AnythingOfType("string")).Return(nil)
+				userGateway.On("Get",
+					context.Background(),
+					mock.AnythingOfType("uint")).Return(mockUser, nil)
+				productGateway.On("Get",
+					context.Background(),
+					mock.AnythingOfType("uint")).Return(mockProduct, nil)
+				productGateway.On("UpdateProductQuantity",
+					context.Background(),
+					mock.AnythingOfType("uint"),
+					mock.AnythingOfType("uint")).Return(true, nil)
+				paymentGateway.On("Create",
+					context.Background(),
+					mock.AnythingOfType("*pb.CreatePaymentRequest")).
+					Return(mockPayment, nil)
+				publisher.On("PublishMessage", mock.AnythingOfType("dto.CreateUserPoint")).Return(nil)
 			},
 			expectFunc: func(w *httptest.ResponseRecorder, mockResponse *models.Order) {
 				assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -110,26 +180,68 @@ func TestCreateOrder(t *testing.T) {
 		},
 		{
 			name: "CreateOrderError",
-			setupInputFunc: func(input *dto.CreateOrderDto, mockResponse *models.Order, userMock *pb.User) {
-				input.ProductId = 1
+			setupInputFunc: func(
+				input *dto.CreateOrderDto,
+				mockResponse *models.Order,
+				userMock *userPb.User,
+				mockProduct *productPb.ReadProductResponse,
+				mockPayment *paymentPb.CreatePaymentResponse,
+			) {
 				input.UserId = 1
+				input.ProductId = 1
 				input.ProductCount = 1
+				product := productPb.Product{
+					Id:       uint64(input.ProductId),
+					Name:     "product name",
+					Price:    100,
+					Quantity: 10,
+				}
+				mockProduct.Product = &product
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
+				mockResponse.UserId = input.UserId
+				mockResponse.ProductId = input.ProductId
+				mockResponse.ProductCount = input.ProductCount
+				mockResponse.Amount = uint(mockProduct.Product.Price) * uint(input.ProductCount)
+				payment := paymentPb.Payment{
+					Id:     uint64(1),
+					Amount: uint64(mockResponse.Amount),
+				}
+				mockPayment.Payment = &payment
+				userMock.Id = uint64(input.UserId)
+				userMock.Username = "test"
+				userMock.FullName = "user full name"
 			},
 			mockFunc: func(
 				userRepo *mocks.MockOrderRepository,
 				mockResponse *models.Order,
 				userGateway *mocks.MockUserGateway,
-				mockUser *pb.User,
+				productGateway *mocks.MockProductGateway,
+				paymentGateway *mocks.MockPaymentGateway,
+				mockUser *userPb.User,
+				mockProduct *productPb.ReadProductResponse,
+				mockPayment *paymentPb.CreatePaymentResponse,
 				publisher *mocks.MockRabbitPublisher,
 			) {
 				err := errors.New("Error")
 				userRepo.On("CreateOrder", mock.AnythingOfType("*models.Order")).Return(err)
+				userRepo.On("UpdateOrderStatus", mock.AnythingOfType("uint"), mock.AnythingOfType("string")).Return(nil)
 				userGateway.On("Get",
 					context.Background(),
 					mock.AnythingOfType("uint")).Return(mockUser, nil)
+				productGateway.On("Get",
+					context.Background(),
+					mock.AnythingOfType("uint")).Return(mockProduct, nil)
+				productGateway.On("UpdateProductQuantity",
+					context.Background(),
+					mock.AnythingOfType("uint"),
+					mock.AnythingOfType("uint")).Return(true, nil)
+				paymentGateway.On("Create",
+					context.Background(),
+					mock.AnythingOfType("*pb.CreatePaymentRequest")).
+					Return(mockPayment, nil)
+				publisher.On("PublishMessage", mock.AnythingOfType("dto.CreateUserPoint")).Return(nil)
 			},
 			expectFunc: func(w *httptest.ResponseRecorder, mockResponse *models.Order) {
 				assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -143,13 +255,17 @@ func TestCreateOrder(t *testing.T) {
 			userRepo := new(mocks.MockOrderRepository)
 			publisher := new(mocks.MockRabbitPublisher)
 			userGateway := new(mocks.MockUserGateway)
-			userService := services.NewOrderService(userRepo, userGateway, publisher)
+			productGateway := new(mocks.MockProductGateway)
+			paymentGateway := new(mocks.MockPaymentGateway)
+			userService := services.NewOrderService(userRepo, userGateway, paymentGateway, publisher, productGateway)
 			userHandler := NewOrderHandler(userService)
 			var user dto.CreateOrderDto
 			var mockResponse models.Order
-			var userMock pb.User
-			tc.setupInputFunc(&user, &mockResponse, &userMock)
-			tc.mockFunc(userRepo, &mockResponse, userGateway, &userMock, publisher)
+			var userMock userPb.User
+			var productMock productPb.ReadProductResponse
+			var paymentMock paymentPb.CreatePaymentResponse
+			tc.setupInputFunc(&user, &mockResponse, &userMock, &productMock, &paymentMock)
+			tc.mockFunc(userRepo, &mockResponse, userGateway, productGateway, paymentGateway, &userMock, &productMock, &paymentMock, publisher)
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
@@ -221,7 +337,9 @@ func TestReadOrder(t *testing.T) {
 			userRepo := new(mocks.MockOrderRepository)
 			publisher := new(mocks.MockRabbitPublisher)
 			userGateway := new(mocks.MockUserGateway)
-			userService := services.NewOrderService(userRepo, userGateway, publisher)
+			productGateway := new(mocks.MockProductGateway)
+			paymentGateway := new(mocks.MockPaymentGateway)
+			userService := services.NewOrderService(userRepo, userGateway, paymentGateway, publisher, productGateway)
 			userHandler := NewOrderHandler(userService)
 			var input dto.ReadOrderRequest
 			var mockResponse models.Order
@@ -333,7 +451,9 @@ func TestListOrder(t *testing.T) {
 			userRepo := new(mocks.MockOrderRepository)
 			publisher := new(mocks.MockRabbitPublisher)
 			userGateway := new(mocks.MockUserGateway)
-			userService := services.NewOrderService(userRepo, userGateway, publisher)
+			productGateway := new(mocks.MockProductGateway)
+			paymentGateway := new(mocks.MockPaymentGateway)
+			userService := services.NewOrderService(userRepo, userGateway, paymentGateway, publisher, productGateway)
 			userHandler := NewOrderHandler(userService)
 			var input dto.ListOrderQuery
 			var total int64
@@ -342,7 +462,7 @@ func TestListOrder(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
-			url := fmt.Sprintf("/orders?page=%d&per_page=%d&username=%d", input.Page, input.PerPage, *&input.UserId)
+			url := fmt.Sprintf("/orders?page=%d&per_page=%d&username=%d", input.Page, input.PerPage, input.UserId)
 			c.Request, _ = http.NewRequest(http.MethodGet, url, nil)
 
 			// Act
@@ -427,7 +547,9 @@ func TestUpdateOrder(t *testing.T) {
 			userRepo := new(mocks.MockOrderRepository)
 			publisher := new(mocks.MockRabbitPublisher)
 			userGateway := new(mocks.MockUserGateway)
-			userService := services.NewOrderService(userRepo, userGateway, publisher)
+			productGateway := new(mocks.MockProductGateway)
+			paymentGateway := new(mocks.MockPaymentGateway)
+			userService := services.NewOrderService(userRepo, userGateway, paymentGateway, publisher, productGateway)
 			userHandler := NewOrderHandler(userService)
 			var user dto.CreateOrderDto
 			var mockResponse models.Order

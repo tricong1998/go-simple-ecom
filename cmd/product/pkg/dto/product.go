@@ -7,8 +7,9 @@ import (
 )
 
 type CreateProductDto struct {
-	Name  string  `json:"name" binding:"required"`
-	Price float32 `json:"price" binding:"required,min=1"`
+	Name     string `json:"name" binding:"required"`
+	Price    uint   `json:"price" binding:"required,min=1"`
+	Quantity uint   `json:"quantity" binding:"required,min=1"`
 }
 
 type ReadProductRequest struct {
@@ -18,13 +19,14 @@ type ReadProductRequest struct {
 type ProductResponse struct {
 	ID        uint      `json:"id"`
 	Name      string    `json:"name"`
-	Price     float32   `json:"price"`
+	Price     uint      `json:"price"`
+	Quantity  uint      `json:"quantity"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ListProductQuery struct {
-	Name    *string `form:"username"`
+	Name    *string `form:"name"`
 	Page    int32   `form:"page" binding:"required,min=1"`
 	PerPage int32   `form:"per_page" binding:"required,min=5,max=10"`
 }
@@ -39,6 +41,7 @@ func ToProductResponse(user *models.Product) *ProductResponse {
 		ID:        user.ID,
 		Name:      user.Name,
 		Price:     user.Price,
+		Quantity:  user.Quantity,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}

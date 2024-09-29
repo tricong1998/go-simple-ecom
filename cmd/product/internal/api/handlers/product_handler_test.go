@@ -42,6 +42,7 @@ func TestCreateProduct(t *testing.T) {
 			setupInputFunc: func(input *dto.CreateProductDto, mockResponse *models.Product) {
 				input.Name = "Full name"
 				input.Price = 1
+				input.Quantity = 1
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
@@ -83,6 +84,7 @@ func TestCreateProduct(t *testing.T) {
 			setupInputFunc: func(input *dto.CreateProductDto, mockResponse *models.Product) {
 				input.Name = "Full name"
 				input.Price = 1
+				input.Quantity = 1
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt

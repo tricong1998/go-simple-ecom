@@ -1,21 +1,26 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tricong1998/go-ecom/cmd/user/internal/services"
+	"github.com/tricong1998/go-ecom/cmd/user/internal/util"
 	"github.com/tricong1998/go-ecom/cmd/user/pkg/dto"
 	"github.com/tricong1998/go-ecom/cmd/user/pkg/models"
+	"github.com/tricong1998/go-ecom/pkg/gin/middleware"
+	"github.com/tricong1998/go-ecom/pkg/token"
 )
 
 type UserHandler struct {
 	UserService services.IUserService
+	JwtService  services.IJwtService
 }
 
-func NewUserHandler(userService services.IUserService) *UserHandler {
-	return &UserHandler{userService}
+func NewUserHandler(userService services.IUserService, jwtService services.IJwtService) *UserHandler {
+	return &UserHandler{userService, jwtService}
 }
 
 func (userHandler *UserHandler) CreateUser(ctx *gin.Context) {
@@ -25,9 +30,17 @@ func (userHandler *UserHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	hashedPassword, err := util.HashPassword(input.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	user := models.User{
 		Username: input.Username,
 		FullName: input.FullName,
+		Password: hashedPassword,
+		Role:     "user",
 	}
 	if err := userHandler.UserService.CreateUser(&user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -54,7 +67,37 @@ func (userHandler *UserHandler) ReadUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, dto.ToUserResponse(user))
 }
 
-func (userHandler *UserHandler) UpdateUser(ctx *gin.Context) {
+func (userHandler *UserHandler) ReadMe(ctx *gin.Context) {
+	userPayload, ok := ctx.Get(middleware.AuthorizationPayloadKey)
+	if !ok {
+		err := errors.New("user not found")
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+	payload := userPayload.(*token.Payload)
+	user, err := userHandler.UserService.ReadUser(payload.UserId)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.ToUserResponse(user))
+}
+
+func (userHandler *UserHandler) UpdateMe(ctx *gin.Context) {
+	userPayload, ok := ctx.Get(middleware.AuthorizationPayloadKey)
+	if !ok {
+		err := errors.New("user not found")
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+	payload := userPayload.(*token.Payload)
+	user, err := userHandler.UserService.ReadUser(payload.UserId)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
 	var input dto.CreateUserDto
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -67,17 +110,14 @@ func (userHandler *UserHandler) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	user := models.User{
-		Username: input.Username,
-		FullName: input.FullName,
-	}
-	user.ID = readUserRequest.ID
-	if err := userHandler.UserService.UpdateUser(&user); err != nil {
+	user.Username = input.Username
+	user.FullName = input.FullName
+	if err := userHandler.UserService.UpdateUser(user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.ToUserResponse(&user))
+	ctx.JSON(http.StatusCreated, dto.ToUserResponse(user))
 }
 
 func (userHandler *UserHandler) ListUsers(ctx *gin.Context) {
@@ -122,4 +162,40 @@ func (userHandler *UserHandler) DeleteUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{})
+}
+
+func (userHandler *UserHandler) Login(ctx *gin.Context) {
+	var input dto.LoginUserDto
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := userHandler.UserService.GetUserByUsername(input.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	err = util.ComparePassword(user.Password, input.Password)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	accessToken, _, err := userHandler.JwtService.CreateToken(user.Username, user.ID, user.Role)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	refreshToken, _, err := userHandler.JwtService.CreateToken(user.Username, user.ID, user.Role)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
 }

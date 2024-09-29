@@ -12,6 +12,7 @@ type UserRepository struct {
 type IUserRepository interface {
 	CreateUser(input *models.User) error
 	ReadUser(id uint) (*models.User, error)
+	GetUserByUsername(username string) (*models.User, error)
 	ListUsers(
 		perPage, page int32,
 		username *string,
@@ -31,6 +32,15 @@ func (userRepo *UserRepository) CreateUser(input *models.User) error {
 func (userRepo *UserRepository) ReadUser(id uint) (*models.User, error) {
 	var user *models.User
 	err := userRepo.db.First(&user, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (userRepo *UserRepository) GetUserByUsername(username string) (*models.User, error) {
+	var user *models.User
+	err := userRepo.db.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

@@ -14,20 +14,15 @@ type IOrderRepository interface {
 	ReadOrder(id uint) (*models.Order, error)
 	ListOrders(
 		perPage, page int32,
-		username int,
+		userId uint,
 	) ([]models.Order, int64, error)
 	UpdateOrder(input *models.Order) error
 	DeleteOrder(id uint) error
-	Begin() *gorm.DB
-	UpdateOrderStatusWithTx(tx *gorm.DB, orderId uint, status string) error
+	UpdateOrderStatus(orderId uint, status string) error
 }
 
 func NewOrderRepository(db *gorm.DB) *OrderRepository {
 	return &OrderRepository{db}
-}
-
-func (orderRepo *OrderRepository) Begin() *gorm.DB {
-	return orderRepo.DB.Begin()
 }
 
 func (orderRepo *OrderRepository) CreateOrder(input *models.Order) error {
@@ -45,14 +40,14 @@ func (userRepo *OrderRepository) ReadOrder(id uint) (*models.Order, error) {
 
 func (userRepo *OrderRepository) ListOrders(
 	perPage, page int32,
-	username int,
+	userId uint,
 ) ([]models.Order, int64, error) {
 	var users []models.Order
 	var total int64
 
 	var query models.Order
-	if username != 0 {
-		query.UserId = username
+	if userId != 0 {
+		query.UserId = userId
 	}
 
 	err := userRepo.DB.Model(&models.Order{}).Where(query).Count(&total).Error
@@ -73,6 +68,6 @@ func (userRepo *OrderRepository) DeleteOrder(id uint) error {
 	return userRepo.DB.Delete(&models.Order{}, id).Error
 }
 
-func (userRepo *OrderRepository) UpdateOrderStatusWithTx(tx *gorm.DB, orderId uint, status string) error {
-	return tx.Model(&models.Order{}).Where("id = ?", orderId).Update("status", status).Error
+func (userRepo *OrderRepository) UpdateOrderStatus(orderId uint, status string) error {
+	return userRepo.DB.Model(&models.Order{}).Where("id = ?", orderId).Update("status", status).Error
 }

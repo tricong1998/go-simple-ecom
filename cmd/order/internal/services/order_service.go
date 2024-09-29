@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	paymentGrpc "github.com/tricong1998/go-ecom/cmd/order/internal/gateway/payment/grpc"
+	productGrpc "github.com/tricong1998/go-ecom/cmd/order/internal/gateway/product/grpc"
 	userGrpc "github.com/tricong1998/go-ecom/cmd/order/internal/gateway/user/grpc"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/models"
 	"github.com/tricong1998/go-ecom/cmd/order/internal/repository"
@@ -22,6 +24,7 @@ type OrderService struct {
 	OrderRepo            repository.IOrderRepository
 	UserGrpcGateway      userGrpc.IUserGateway
 	PaymentGrpcGateway   paymentGrpc.IPaymentGateway
+	ProductGrpcGateway   productGrpc.IProductGateway
 	CreateOrderPublisher rabbitmq.IPublisher
 }
 
@@ -30,7 +33,7 @@ type IOrderService interface {
 	ReadOrder(id uint) (*models.Order, error)
 	ListOrders(
 		perPage, page int32,
-		username int,
+		userId uint,
 	) ([]models.Order, int64, error)
 	UpdateOrder(user *models.Order) error
 	DeleteOrder(id uint) error
@@ -41,8 +44,9 @@ func NewOrderService(
 	userGateway userGrpc.IUserGateway,
 	paymentGateway paymentGrpc.IPaymentGateway,
 	createOrderPublisher rabbitmq.IPublisher,
+	productGateway productGrpc.IProductGateway,
 ) *OrderService {
-	return &OrderService{userRepo, userGateway, paymentGateway, createOrderPublisher}
+	return &OrderService{userRepo, userGateway, paymentGateway, productGateway, createOrderPublisher}
 }
 
 func (us *OrderService) CreateOrder(order *models.Order) error {
@@ -50,9 +54,12 @@ func (us *OrderService) CreateOrder(order *models.Order) error {
 	if err != nil {
 		return err
 	}
+	product, err := us.ProductGrpcGateway.Get(context.Background(), uint(order.ProductId))
+	if err != nil {
+		return err
+	}
 	order.Username = user.Username
-	// TODO: calculate amount
-	order.Amount = 1
+	order.Amount = uint(product.GetProduct().GetPrice()) * uint(order.ProductCount)
 	order.Status = Pending
 	err = us.OrderRepo.CreateOrder(order)
 	if err != nil {
@@ -68,41 +75,36 @@ func (us *OrderService) CreateOrder(order *models.Order) error {
 }
 
 func (us *OrderService) PaymentOrder(order *models.Order) error {
-	tx := us.OrderRepo.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	payment, err := us.PaymentGrpcGateway.Create(context.Background(), &pb.CreatePaymentRequest{
-		OrderId: uint64(order.ID),
-		Amount:  uint64(order.Amount),
-		Method:  "cash",
-		UserId:  uint64(order.UserId),
-	})
+	payment, err := us.PaymentGrpcGateway.
+		Create(context.Background(), &pb.CreatePaymentRequest{
+			OrderId: uint64(order.ID),
+			Amount:  uint64(order.Amount),
+			Method:  "cash",
+			UserId:  uint64(order.UserId),
+		})
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	if payment.GetPayment().Status == "failed" {
 		order.Status = Failed
-		err = us.OrderRepo.UpdateOrderStatusWithTx(tx, order.ID, Failed)
+		err = us.OrderRepo.UpdateOrderStatus(order.ID, Failed)
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
 	}
 
-	order.Status = Success
-	err = us.OrderRepo.UpdateOrderStatusWithTx(tx, order.ID, Success)
+	success, err := us.ProductGrpcGateway.UpdateProductQuantity(context.Background(), uint(order.ProductId), uint(order.ProductCount))
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
+	if !success {
+		return errors.New("failed to update product quantity")
+	}
 
-	err = tx.Commit().Error
+	order.Status = Success
+	err = us.OrderRepo.UpdateOrderStatus(order.ID, Success)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -126,9 +128,9 @@ func (us *OrderService) ReadOrder(id uint) (*models.Order, error) {
 
 func (us *OrderService) ListOrders(
 	perPage, page int32,
-	username int,
+	userId uint,
 ) ([]models.Order, int64, error) {
-	return us.OrderRepo.ListOrders(perPage, page, username)
+	return us.OrderRepo.ListOrders(perPage, page, userId)
 }
 
 func (us *OrderService) UpdateOrder(user *models.Order) error {

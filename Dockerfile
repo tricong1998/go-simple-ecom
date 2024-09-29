@@ -18,7 +18,7 @@ COPY --from=builder /app/product .
 COPY --from=builder /app/payment .
 COPY .env .
 
-EXPOSE 3330 3332 3333 3331
+EXPOSE 3330 3332 3333 3331 3430 3431 3432 3433
 
 CMD ["/app/order"]
 

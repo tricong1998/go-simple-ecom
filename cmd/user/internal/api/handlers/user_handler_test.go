@@ -13,10 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/tricong1998/go-ecom/cmd/user/internal/config"
 	"github.com/tricong1998/go-ecom/cmd/user/internal/mocks"
 	"github.com/tricong1998/go-ecom/cmd/user/internal/services"
 	"github.com/tricong1998/go-ecom/cmd/user/pkg/dto"
 	"github.com/tricong1998/go-ecom/cmd/user/pkg/models"
+	"github.com/tricong1998/go-ecom/pkg/token"
 )
 
 func expectBodyUser(t *testing.T, w *httptest.ResponseRecorder, mockResponse *models.User) {
@@ -43,6 +45,7 @@ func TestCreateUser(t *testing.T) {
 			setupInputFunc: func(input *dto.CreateUserDto, mockResponse *models.User) {
 				input.FullName = "Full name"
 				input.Username = "username"
+				input.Password = "password"
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
@@ -84,6 +87,7 @@ func TestCreateUser(t *testing.T) {
 			setupInputFunc: func(input *dto.CreateUserDto, mockResponse *models.User) {
 				input.FullName = "Full name"
 				input.Username = "username"
+				input.Password = "password"
 				mockResponse.ID = 1
 				mockResponse.CreatedAt = time.Now()
 				mockResponse.UpdatedAt = mockResponse.CreatedAt
@@ -106,7 +110,17 @@ func TestCreateUser(t *testing.T) {
 			userPointRepo := new(mocks.MockUserPointRepository)
 			userPointService := services.NewUserPointService(userPointRepo)
 			userService := services.NewUserService(userRepo, userPointService)
-			userHandler := NewUserHandler(userService)
+			tokenMaker, err := token.NewJWTMaker("12345678901234567890123456789012")
+			if err != nil {
+				t.Fatalf("Failed to create token maker: %v", err)
+			}
+			jwtService := services.NewJwtService(tokenMaker, config.AuthConfig{
+				AccessTokenSecret:    "test",
+				AccessTokenDuration:  time.Hour,
+				RefreshTokenSecret:   "test",
+				RefreshTokenDuration: time.Hour * 24 * 30,
+			})
+			userHandler := NewUserHandler(userService, jwtService)
 			var user dto.CreateUserDto
 			var mockResponse models.User
 			tc.setupInputFunc(&user, &mockResponse)
@@ -183,7 +197,17 @@ func TestReadUser(t *testing.T) {
 			userPointRepo := new(mocks.MockUserPointRepository)
 			userPointService := services.NewUserPointService(userPointRepo)
 			userService := services.NewUserService(userRepo, userPointService)
-			userHandler := NewUserHandler(userService)
+			tokenMaker, err := token.NewJWTMaker("test")
+			if err != nil {
+				t.Fatalf("Failed to create token maker: %v", err)
+			}
+			jwtService := services.NewJwtService(tokenMaker, config.AuthConfig{
+				AccessTokenSecret:    "test",
+				AccessTokenDuration:  time.Hour,
+				RefreshTokenSecret:   "test",
+				RefreshTokenDuration: time.Hour * 24 * 30,
+			})
+			userHandler := NewUserHandler(userService, jwtService)
 			var input dto.ReadUserRequest
 			var mockResponse models.User
 			tc.setupInputFunc(&input, &mockResponse)
@@ -297,7 +321,17 @@ func TestListUser(t *testing.T) {
 			userPointRepo := new(mocks.MockUserPointRepository)
 			userPointService := services.NewUserPointService(userPointRepo)
 			userService := services.NewUserService(userRepo, userPointService)
-			userHandler := NewUserHandler(userService)
+			tokenMaker, err := token.NewJWTMaker("test")
+			if err != nil {
+				t.Fatalf("Failed to create token maker: %v", err)
+			}
+			jwtService := services.NewJwtService(tokenMaker, config.AuthConfig{
+				AccessTokenSecret:    "test",
+				AccessTokenDuration:  time.Hour,
+				RefreshTokenSecret:   "test",
+				RefreshTokenDuration: time.Hour * 24 * 30,
+			})
+			userHandler := NewUserHandler(userService, jwtService)
 			var input dto.ListUserQuery
 			var total int64
 			mockResponse := tc.setupInputFunc(&input, &total)
@@ -392,7 +426,17 @@ func TestUpdateUser(t *testing.T) {
 			userPointRepo := new(mocks.MockUserPointRepository)
 			userPointService := services.NewUserPointService(userPointRepo)
 			userService := services.NewUserService(userRepo, userPointService)
-			userHandler := NewUserHandler(userService)
+			tokenMaker, err := token.NewJWTMaker("test")
+			if err != nil {
+				t.Fatalf("Failed to create token maker: %v", err)
+			}
+			jwtService := services.NewJwtService(tokenMaker, config.AuthConfig{
+				AccessTokenSecret:    "test",
+				AccessTokenDuration:  time.Hour,
+				RefreshTokenSecret:   "test",
+				RefreshTokenDuration: time.Hour * 24 * 30,
+			})
+			userHandler := NewUserHandler(userService, jwtService)
 			var user dto.CreateUserDto
 			var mockResponse models.User
 			tc.setupInputFunc(&user, &mockResponse)
@@ -406,7 +450,7 @@ func TestUpdateUser(t *testing.T) {
 			c.Request.Header.Set("Content-Type", "application/json")
 			c.Params = gin.Params{{Key: "id", Value: fmt.Sprint(mockResponse.ID)}}
 
-			userHandler.UpdateUser(c)
+			userHandler.UpdateMe(c)
 
 			tc.expectFunc(w, &mockResponse)
 		})

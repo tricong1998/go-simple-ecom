@@ -7,9 +7,9 @@ import (
 )
 
 type CreateOrderDto struct {
-	ProductId    int `json:"product_id" binding:"required"`
-	UserId       int `json:"user_id" binding:"required"`
-	ProductCount int `json:"product_count" binding:"required"`
+	ProductId    uint `json:"product_id" binding:"required"`
+	UserId       uint `json:"user_id" binding:"required"`
+	ProductCount uint `json:"product_count" binding:"required"`
 }
 
 type ReadOrderRequest struct {
@@ -18,16 +18,16 @@ type ReadOrderRequest struct {
 
 type OrderResponse struct {
 	ID           uint      `json:"id"`
-	ProductId    int       `json:"product_id"`
-	UserId       int       `json:"user_id"`
+	ProductId    uint      `json:"product_id"`
+	UserId       uint      `json:"user_id"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
-	ProductCount int       `json:"product_count"`
-	Amount       int       `json:"amount"`
+	ProductCount uint      `json:"product_count"`
+	Amount       uint      `json:"amount"`
 }
 
 type ListOrderQuery struct {
-	UserId  int   `form:"user_id"`
+	UserId  uint  `form:"user_id"`
 	Page    int32 `form:"page" binding:"required,min=1"`
 	PerPage int32 `form:"per_page" binding:"required,min=5,max=10"`
 }

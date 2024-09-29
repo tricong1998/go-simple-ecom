@@ -9,6 +9,12 @@ import (
 type CreateUserDto struct {
 	Username string `json:"username" binding:"required"`
 	FullName string `json:"full_name" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type LoginUserDto struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 type ReadUserRequest struct {
@@ -21,6 +27,7 @@ type UserResponse struct {
 	FullName  string    `json:"full_name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	Role      string    `json:"role"`
 }
 
 type ListUserQuery struct {
@@ -41,5 +48,6 @@ func ToUserResponse(user *models.User) *UserResponse {
 		FullName:  user.FullName,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
+		Role:      user.Role,
 	}
 }

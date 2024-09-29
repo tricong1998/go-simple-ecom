@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pb;
+
+import "rpc_read_product.proto";
+import "rpc_update_product_quantity.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/product/pb";
+
+service ProductGrpc {
+  rpc ReadProduct(ReadProductRequest) returns (ReadProductResponse) {
+    option (google.api.http) = {
+        get: "/v1/read_product/{id}"
+      };
+  }
+  rpc UpdateProductQuantity(UpdateProductQuantityRequest) returns (UpdateProductQuantityResponse) {
+    option (google.api.http) = {
+        put: "/v1/update_product_quantity/{product_id}"
+        body: "*"
+      };
+  }
+}

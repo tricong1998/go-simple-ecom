@@ -36,3 +36,8 @@ func (m *MockProductRepository) DeleteProduct(id uint) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
+
+func (m *MockProductRepository) UpdateProductQuantity(productId, quantity uint) (bool, error) {
+	args := m.Called(productId, quantity)
+	return args.Get(0).(bool), args.Error(1)
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pb;
+
+import "product.proto";
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/product/pb";
+
+message ReadProductRequest {
+  uint64 id = 1;
+}
+
+message ReadProductResponse {
+  Product product = 1;
+}

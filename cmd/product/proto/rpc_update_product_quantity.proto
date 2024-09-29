@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/tricong1998/go-ecom/cmd/product/pb";
+
+message UpdateProductQuantityRequest {
+  uint64 product_id = 1;
+  uint64 quantity = 2;
+}
+
+message UpdateProductQuantityResponse {
+  bool success = 1;
+}

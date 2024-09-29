@@ -2,8 +2,10 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/tricong1998/go-ecom/pkg/util"
 )
 
 type DBConfig struct {
@@ -19,12 +21,21 @@ type ServerConfig struct {
 	Port string
 }
 
+type AuthConfig struct {
+	AccessTokenDuration  time.Duration
+	AccessTokenSecret    string
+	RefreshTokenSecret   string
+	RefreshTokenDuration time.Duration
+}
+
 type Config struct {
 	Server         ServerConfig
 	UserServer     ServerConfig
 	PaymentServer  ServerConfig
+	ProductServer  ServerConfig
 	DB             DBConfig
 	RabbitMQConfig RabbitMQConfig
+	Auth           AuthConfig
 }
 
 type RabbitMQConfig struct {
@@ -61,11 +72,21 @@ func Load() (*Config, error) {
 			Port: os.Getenv("PAYMENT_GRPC_SERVER_PORT"),
 			Host: os.Getenv("ORDER_PAYMENT_GRPC_SERVER_HOST"),
 		},
+		ProductServer: ServerConfig{
+			Port: os.Getenv("PRODUCT_GRPC_SERVER_PORT"),
+			Host: os.Getenv("ORDER_PRODUCT_GRPC_SERVER_HOST"),
+		},
 		RabbitMQConfig: RabbitMQConfig{
 			Port:     os.Getenv("AMQP_SERVER_PORT"),
 			Host:     os.Getenv("AMQP_SERVER_HOST"),
 			User:     os.Getenv("AMQP_SERVER_USER"),
 			Password: os.Getenv("AMQP_SERVER_PASSWORD"),
+		},
+		Auth: AuthConfig{
+			AccessTokenSecret:    os.Getenv("ACCESS_TOKEN_SECRET"),
+			RefreshTokenSecret:   os.Getenv("REFRESH_TOKEN_SECRET"),
+			AccessTokenDuration:  util.ParseDuration(os.Getenv("ACCESS_TOKEN_DURATION"), 15*time.Minute),
+			RefreshTokenDuration: util.ParseDuration(os.Getenv("REFRESH_TOKEN_DURATION"), 24*time.Hour),
 		},
 	}
 

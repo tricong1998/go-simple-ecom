@@ -26,11 +26,11 @@ services:
     container_name: postgres
     image: postgres:16-alpine
     ports:
-      - ${DOCKER_DB_PORT}:${DB_PORT}
+      - ${DB_PORT}:${DOCKER_DB_PORT}
     environment:
       - POSTGRES_USER=${DOCKER_DB_USER}
       - POSTGRES_PASSWORD=${DOCKER_DB_PASSWORD}
-      - POSTGRES_MULTIPLE_DATABASES=${USER_DB_NAME},${ORDER_DB_NAME},${PAYMENT_DB_NAME}
+      - POSTGRES_MULTIPLE_DATABASES=${USER_DB_NAME},${ORDER_DB_NAME},${PAYMENT_DB_NAME},${PRODUCT_DB_NAME}
     networks:
       - go-ecom-network
     volumes:
@@ -41,7 +41,8 @@ services:
         /bin/sh -c "
         pg_isready -d ${USER_DB_NAME} -U ${DOCKER_DB_USER} &&
         pg_isready -d ${ORDER_DB_NAME} -U ${DOCKER_DB_USER} &&
-        pg_isready -d ${PAYMENT_DB_NAME} -U ${DOCKER_DB_USER}
+        pg_isready -d ${PAYMENT_DB_NAME} -U ${DOCKER_DB_USER} &&
+        pg_isready -d ${PRODUCT_DB_NAME} -U ${DOCKER_DB_USER}
         "      
       interval: 5s
       timeout: 5s
@@ -55,15 +56,17 @@ services:
       - "${ORDER_SERVER_PORT}:${ORDER_SERVER_PORT}"
     environment:
       - DB_HOST=postgres
-      - DB_PORT=${DB_PORT}
+      - DB_PORT=${DOCKER_DB_PORT}
       - DB_USER=${DOCKER_DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${ORDER_DB_NAME}
       - AMQP_SERVER_HOST=message-broker
+      - ORDER_USER_GRPC_SERVER_HOST=user-service
+      - ORDER_PAYMENT_GRPC_SERVER_HOST=payment-service
+      - ORDER_PRODUCT_GRPC_SERVER_HOST=product-service
     depends_on:
       - message-broker
-      - user-service
-      - payment-service
+      - postgres
     networks:
       - go-ecom-network
     command: ./order
@@ -78,11 +81,12 @@ services:
       - "${USER_GRPC_SERVER_PORT}:${USER_GRPC_SERVER_PORT}"
     depends_on:
       - message-broker
+      - postgres
     networks:
       - go-ecom-network
     environment:
       - DB_HOST=postgres
-      - DB_PORT=${DB_PORT}
+      - DB_PORT=${DOCKER_DB_PORT}
       - DB_USER=${DOCKER_DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${USER_DB_NAME}
@@ -98,16 +102,37 @@ services:
       - "${PAYMENT_GRPC_SERVER_PORT}:${PAYMENT_GRPC_SERVER_PORT}"
     environment:
       - DB_HOST=postgres
-      - DB_PORT=${DB_PORT}
+      - DB_PORT=${DOCKER_DB_PORT}
       - DB_USER=${DOCKER_DB_USER}
       - DB_PASSWORD=${DOCKER_DB_PASSWORD}
       - DB_NAME=${PAYMENT_DB_NAME}
     depends_on:
       - message-broker
+      - postgres
     networks:
       - go-ecom-network
     command: ./payment
     restart: always
+
+  product-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PRODUCT_SERVER_PORT}:${PRODUCT_SERVER_PORT}"
+      - "${PRODUCT_GRPC_SERVER_PORT}:${PRODUCT_GRPC_SERVER_PORT}"
+    depends_on:
+      - postgres
+    networks:
+      - go-ecom-network
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=${DOCKER_DB_PORT}
+      - DB_USER=${DOCKER_DB_USER}
+      - DB_PASSWORD=${DOCKER_DB_PASSWORD}
+      - DB_NAME=${PRODUCT_DB_NAME}
+    command: ./product
+    restart: always    
 
 volumes:
   rabbitmq_data:

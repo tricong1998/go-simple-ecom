@@ -12,6 +12,7 @@ type ProductService struct {
 type IProductService interface {
 	CreateProduct(input *models.Product) error
 	ReadProduct(id uint) (*models.Product, error)
+	UpdateProductQuantity(productId, quantity uint) (bool, error)
 	ListProducts(
 		perPage, page int32,
 		username *string,
@@ -48,4 +49,8 @@ func (us *ProductService) UpdateProduct(user *models.Product) error {
 
 func (us *ProductService) DeleteProduct(id uint) error {
 	return us.ProductRepo.DeleteProduct(id)
+}
+
+func (us *ProductService) UpdateProductQuantity(productId, quantity uint) (bool, error) {
+	return us.ProductRepo.UpdateProductQuantity(productId, quantity)
 }

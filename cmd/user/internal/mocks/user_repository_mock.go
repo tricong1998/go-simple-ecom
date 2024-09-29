@@ -36,3 +36,8 @@ func (m *MockUserRepository) DeleteUser(id uint) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
+
+func (m *MockUserRepository) GetUserByUsername(username string) (*models.User, error) {
+	args := m.Called(username)
+	return args.Get(0).(*models.User), args.Error(1)
+}

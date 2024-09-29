@@ -13,7 +13,7 @@ GOLINT=golangci-lint
 # SERVICE PATH
 PATH_USER= ./cmd/user
 PATH_PAYMENT= ./cmd/payment
-
+PATH_PRODUCT= ./cmd/product
 # Main package path
 MAIN_PATH_USER=$(PATH_USER)/cmd
 MAIN_PATH_ORDER=./cmd/order/cmd
@@ -38,6 +38,12 @@ build_user:
 
 build_payment:
 	$(GOBUILD) -o $(BINARY_NAME_PAYMENT) -v $(MAIN_PATH_PAYMENT)
+
+build:
+	make build_order
+	make build_product
+	make build_user
+	make build_payment
 
 # Run the project
 run_order:
@@ -109,6 +115,25 @@ proto-payment:
 		--grpc-gateway_out=$(PATH_PAYMENT)/pkg/pb --grpc-gateway_opt paths=source_relative \
     $(PATH_PAYMENT)/proto/*.proto
 
+proto-product:
+	rm -f $(PATH_PRODUCT)/pkg/pb/*.go
+	protoc --proto_path=$(PATH_PRODUCT)/proto --go_out=$(PATH_PRODUCT)/pkg/pb --go_opt=paths=source_relative \
+    --go-grpc_out=$(PATH_PRODUCT)/pkg/pb --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=$(PATH_PRODUCT)/pkg/pb --grpc-gateway_opt paths=source_relative \
+    $(PATH_PRODUCT)/proto/*.proto
+
+generate-admin-account:
+	@if [ -z "$(password)" ]; then \
+		echo "Error: Password not provided. Usage: make generate-admin-account password=your_password"; \
+		exit 1; \
+	fi
+	@if [ -z "$(admin)" ]; then \
+		echo "Error: Admin not provided. Usage: make generate-admin-account admin=your_admin"; \
+		exit 1; \
+	fi
+	$(GOBUILD) -o $(BINARY_NAME_USER) -v $(PATH_USER)/cmd/scripts/generate_admin_account.go
+	./$(BINARY_NAME_USER) "$(admin)" "$(password)"
+
 # Help command
 help:
 	@echo "Available commands:"
@@ -122,5 +147,6 @@ help:
 	@echo "  make deps          - Download dependencies"
 	@echo "  make update-deps   - Update dependencies"
 	@echo "  make build-all     - Build for multiple platforms"
+	@echo "  make generate-admin-account admin=your_admin password=your_password - Generate admin account with admin and password"
 
 .PHONY: build run clean test test-coverage lint deps update-deps build-all help proto
