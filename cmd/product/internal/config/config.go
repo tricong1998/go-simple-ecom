@@ -2,8 +2,10 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/tricong1998/go-ecom/pkg/util"
 )
 
 type DBConfig struct {
@@ -24,10 +26,18 @@ type GrpcServerConfig struct {
 	Port string
 }
 
+type AuthConfig struct {
+	AccessTokenDuration  time.Duration
+	AccessTokenSecret    string
+	RefreshTokenSecret   string
+	RefreshTokenDuration time.Duration
+}
+
 type Config struct {
 	Server     HttpServerConfig
 	GrpcServer GrpcServerConfig
 	DB         DBConfig
+	Auth       AuthConfig
 }
 
 func Load() (*Config, error) {
@@ -52,6 +62,12 @@ func Load() (*Config, error) {
 			DBUser:     os.Getenv("DB_USER"),
 			DBPassword: os.Getenv("DB_PASSWORD"),
 			DBName:     os.Getenv("PRODUCT_DB_NAME"),
+		},
+		Auth: AuthConfig{
+			AccessTokenSecret:    os.Getenv("ACCESS_TOKEN_SECRET"),
+			RefreshTokenSecret:   os.Getenv("REFRESH_TOKEN_SECRET"),
+			AccessTokenDuration:  util.ParseDuration(os.Getenv("ACCESS_TOKEN_DURATION"), 15*time.Minute),
+			RefreshTokenDuration: util.ParseDuration(os.Getenv("REFRESH_TOKEN_DURATION"), 24*time.Hour),
 		},
 	}
 

@@ -28,7 +28,6 @@ func expectBodyUser(t *testing.T, w *httptest.ResponseRecorder, mockResponse *mo
 	assert.Equal(t, response.ID, mockResponse.ID)
 	assert.Equal(t, response.Username, mockResponse.Username)
 	assert.Equal(t, response.FullName, mockResponse.FullName)
-	assert.Equal(t, response.FullName, mockResponse.FullName)
 	assert.WithinDuration(t, response.CreatedAt, mockResponse.CreatedAt, time.Second)
 	assert.WithinDuration(t, response.UpdatedAt, mockResponse.UpdatedAt, time.Second)
 }

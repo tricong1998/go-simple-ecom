@@ -40,10 +40,6 @@ func main() {
 		log.Fatal().Err(err).Msg("Cannot migrate database")
 	}
 
-	// Initialize router
-	routes := gin.Default()
-	api.SetupRoutes(routes, db)
-
 	go runGrpcServer(cfg, db, log)
 	runGinServer(cfg, db, log)
 }
@@ -51,7 +47,7 @@ func main() {
 func runGinServer(cfg *config.Config, db *gorm.DB, log zerolog.Logger) {
 	// Initialize router
 	routes := gin.Default()
-	api.SetupRoutes(routes, db)
+	api.SetupRoutes(routes, db, cfg, &log)
 
 	// Start server
 	address := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
